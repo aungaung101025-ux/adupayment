@@ -3235,9 +3235,10 @@ class MyanmarFinanceBot:
             logger.info("Bot stopped manually.")
         except Exception as e:
             logger.critical(f"Bot failed to run: {e}", exc_info=True)
+        # --- Code အမှန် (Indentation မှန်ကန်) ---
         if __name__ == '__main__':
             if not TELEGRAM_AVAILABLE or not PANDAS_AVAILABLE or not SQLALCHEMY_AVAILABLE:
-            sys.exit(1)
+                sys.exit(1)
 
             bot = MyanmarFinanceBot()
-            bot.run()    
+            bot.run()
