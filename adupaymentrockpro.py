@@ -3164,7 +3164,6 @@ class MyanmarFinanceBot:
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
         # (!!!) RENDER FIX: Data တွေကို /app/data (Persistent Disk) မှာ သိမ်းပါ (!!!)
         DATA_DIR = "/app/data"
-        os.makedirs(DATA_DIR, exist_ok=True)
         persistence = PicklePersistence(filepath=f'{DATA_DIR}/bot_persistence')
 
 
