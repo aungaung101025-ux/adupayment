@@ -1,0 +1,10 @@
+python-telegram-bot[ext]
+pandas
+openpyxl
+weasyprint
+plotly
+kaleido
+sqlalchemy
+apscheduler
+asyncio
+httpx

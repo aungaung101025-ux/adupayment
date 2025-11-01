@@ -1,0 +1,10 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local Data (!!!)
+financebot.db
+bot_persistence
+
+# IDE files
+.vscode/
