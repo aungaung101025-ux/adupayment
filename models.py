@@ -8,7 +8,6 @@ from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 # --- Base and Engine Setup ---
 # Data တွေကို Render ရဲ့ Persistent Disk ထဲမှာ သိမ်းပါမယ်
 DATA_DIR = "/app/data"
-os.makedirs(DATA_DIR, exist_ok=True) # /app/data folder ကို ဆောက်ခိုင်းပါ
 DATABASE_URL = f"sqlite:///{DATA_DIR}/financebot.db"
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
