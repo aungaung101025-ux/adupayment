@@ -25,9 +25,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # --- အဆင့် ၆: Bot Code များကို Copy ကူးခြင်း ---
-COPY adupaymentrockvs.py .
+COPY adupaymentrockpro.py .
 COPY models.py .
 COPY database_manager.py .
 
 # --- အဆင့် ၇: Bot ကို Run ခြင်း ---
-CMD ["python", "adupaymentrockvs.py"]
+CMD ["python", "adupaymentrockpro.py"]
