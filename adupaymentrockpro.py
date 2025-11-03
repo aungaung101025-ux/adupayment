@@ -1,4 +1,6 @@
 # adupaymentrock.py (Final Version - Render Ready)
+print("===== V12 FINAL CODE IS RUNNING =====")
+print("===== V8 ENTRYPOINT TEST - STARTING SCRIPT =====")
 from database_manager import DatabaseManager
 import re
 import os
