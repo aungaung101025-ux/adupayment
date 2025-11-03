@@ -3,7 +3,7 @@ pandas
 openpyxl
 weasyprint
 plotly
-kaleido
+kaleido==0.1.1
 sqlalchemy
 apscheduler
 asyncio
