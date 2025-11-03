@@ -17,7 +17,7 @@ import base64  # Needed for embedding charts in PDF
 
 # ----------------------- Config & Logging -----------------------
 # (!!!) Token ကို Test လုပ်ဖို့ တိုက်ရိုက် ထည့်သွင်းပါ (!!!)
-TELEGRAM_BOT_TOKEN = '8409374148:AAEDP5uU2FjLSca1mNyl72B3IK3bYTElkAg'
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 EXPORT_DIR = 'exports'
 
 # --- NEW: DatabaseManager ---
@@ -738,7 +738,7 @@ class MyanmarFinanceBot:
         self.scheduler = AsyncIOScheduler()
 
         # --- (!!!) သင့် ADMIN ID အစစ်ကို ဤနေရာတွင် တိုက်ရိုက်ထည့်ပါ (!!!) ---
-        self.ADMIN_ID = 7200049630  # <-- ဥပမာ: 123456789 (ဂဏန်းသက်သက်)
+        self.ADMIN_ID = int(os.environ.get('ADMIN_ID', 0))  # <-- ဥပမာ: 123456789 (ဂဏန်းသက်သက်)
 
         self.application: Optional[Application] = None
 
@@ -3168,7 +3168,21 @@ class MyanmarFinanceBot:
             return
 
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
-        DATA_DIR = "/app/data"
+        DATA_DIR = os.environ.get('DATA_DIR')
+        
+        if not DATA_DIR:
+            print("❌ FATAL ERROR: DATA_DIR environment variable is not set!")
+            print("Render Dashboard မှာ 'Disk' တစ်ခု ချိတ်ပြီး 'DATA_DIR' variable ကို သတ်မှတ်ပေးပါ။")
+            return  # Bot ရပ်သွားပါပြီ
+            
+        # DATA_DIR folder မရှိသေးရင် အလိုအလျောက် ဆောက်ပေးပါ
+        try:
+            os.makedirs(DATA_DIR, exist_ok=True)
+        except Exception as e:
+            print(f"❌ FATAL ERROR: Cannot create DATA_DIR at '{DATA_DIR}'. Error: {e}")
+            print("ဒါဟာ Read-only file system error ဖြစ်နိုင်ပါတယ်။ DATA_DIR path ကို စစ်ဆေးပါ။")
+            return # Bot ရပ်သွားပါပြီ
+
         persistence = PicklePersistence(filepath=f'{DATA_DIR}/bot_persistence')
         print(f"✅ Persistence path set to: {DATA_DIR}/bot_persistence")
 
