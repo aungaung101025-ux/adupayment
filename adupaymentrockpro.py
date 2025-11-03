@@ -636,6 +636,7 @@ class PlotlyChartManager:
                     '</head>', f'<style>{font_face_css}</style></head>', 1)
 
                 buffer = io.BytesIO()
+                # test comment
                 HTML(string=html_str).render().write_png(
                     buffer, presentational_hints=True)
                 buffer.seek(0)
