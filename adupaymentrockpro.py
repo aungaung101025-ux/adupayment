@@ -1,7 +1,15 @@
 # adupaymentrock.py (Final Version - Render Ready)
 print("===== V12 FINAL CODE IS RUNNING =====")
 print("===== V8 ENTRYPOINT TEST - STARTING SCRIPT =====")
-from database_manager import DatabaseManager
+try:
+    from database_manager import DatabaseManager
+    print("✅ SUCCESS: Imported database_manager.py")
+except ModuleNotFoundError as e:
+    print(f"❌❌❌ FATAL CRASH: {e} ❌❌❌")
+    print("ERROR: 'database_manager.py' file ကို ရှာမတွေ့ပါ (ModuleNotFoundError)။")
+    print("ကျေးဇူးပြု၍ 'database_manager.py' file ကို GitHub repository ထဲမှာ ထည့်ပြီး push လုပ်ပါ။")
+    import time
+    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
 import re
 import os
 import json
