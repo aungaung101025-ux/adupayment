@@ -76,27 +76,11 @@ WEASYPRINT_AVAILABLE = False # <-- Set it to False manually
 print("DEBUG: WeasyPrint is now DISABLED.")
 
 # Chart Lib: Plotly
-try:
-    import plotly.graph_objects as go
-    import plotly.io as pio
-    import plotly.colors as px_colors
-    print("DEBUG: Skipping Kaleido import...")
-    try:
-        # (!!!) V14 TEST: Commenting out Kaleido (!!!)
-        # import kaleido
-        KALEIDO_AVAILABLE = False # <-- Set it to False manually
-        print("DEBUG: Kaleido is now DISABLED.")
-    except ImportError:
-        KALEIDO_AVAILABLE = False
-        logger.warning(
-            "Kaleido not found ('pip install kaleido'). Plotly image export might be slower or fail.")
-
-    PLOTLY_AVAILABLE = True
-    pio.templates.default = "plotly_white"
-except ImportError:
-    PLOTLY_AVAILABLE = False
-    logger.warning(
-        "Plotly not found ('pip install plotly kaleido'). Chart generation disabled.")
+# (!!!) V15 TEST: Disabling ALL Plotly imports (!!!)
+print("DEBUG: V15 - Skipping ALL Plotly imports...")
+PLOTLY_AVAILABLE = False
+KALEIDO_AVAILABLE = False
+print("DEBUG: V15 - Plotly and Kaleido are fully DISABLED.")
 
 # --- NEW: SQLAlchemy Check ---
 try:
