@@ -636,7 +636,7 @@ class PlotlyChartManager:
                     '</head>', f'<style>{font_face_css}</style></head>', 1)
 
                 buffer = io.BytesIO()
-                HTML(string=html_str).write_png(
+                HTML(string=html_str).render().write_png(
                     buffer, presentational_hints=True)
                 buffer.seek(0)
                 logger.info("✅ Plotly Chart rendered to PNG using WeasyPrint.")
