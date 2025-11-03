@@ -36,17 +36,23 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(lineno)d', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# --- Third-party Libs ---
+# (!!!) V17 TEST: Check for python-telegram-bot (!!!)
+print("DEBUG: V17 - Attempting to import 'python-telegram-bot'...")
 try:
     from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
     from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, PicklePersistence
     from telegram.constants import ParseMode
     TELEGRAM_AVAILABLE = True
-except ImportError:
+    print("✅ DEBUG: V17 - 'python-telegram-bot' imported SUCCESSFULLY.")
+except ImportError as e:
     TELEGRAM_AVAILABLE = False
-    logger.critical(
-        "❌ python-telegram-bot library not found. Please run 'pip install python-telegram-bot pandas plotly kaleido weasyprint openpyxl sqlalchemy'")
-    sys.exit(1)
+    print("="*50)
+    print("❌❌❌ FATAL CRASH (V17): No module named 'telegram' ❌❌❌")
+    print(f"Error details: {e}")
+    print("ကျေးဇူးပြု၍ 'requirements.txt' file ထဲမှာ 'python-telegram-bot' ထည့်ပြီး push လုပ်ပါ။")
+    print("="*50)
+    import time
+    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
 
 try:
     import pandas as pd
