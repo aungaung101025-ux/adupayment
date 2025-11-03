@@ -16,7 +16,8 @@ import datetime as dt  # Renamed for clarity
 import base64  # Needed for embedding charts in PDF
 
 # ----------------------- Config & Logging -----------------------
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+# (!!!) Token ကို Test လုပ်ဖို့ တိုက်ရိုက် ထည့်သွင်းပါ (!!!)
+TELEGRAM_BOT_TOKEN = '8409374148:AAEDP5uU2FjLSca1mNyl72B3IK3bYTElkAg'
 EXPORT_DIR = 'exports'
 
 # --- NEW: DatabaseManager ---
