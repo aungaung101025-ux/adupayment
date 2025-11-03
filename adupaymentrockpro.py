@@ -3152,28 +3152,45 @@ class MyanmarFinanceBot:
 
     def run(self):
         """Starts the bot."""
+        
+        # --- (!!!) DEBUG: Token ကို အရင်စစ်ပါ (!!!) ---
+        print("--- DEBUG: Checking Environment Variables ---")
+        
         if not TELEGRAM_BOT_TOKEN:
-            print(
-                '❌ TELEGRAM_BOT_TOKEN is missing. Please set it in your code or environment variables.')
-            return
+            print("❌ FATAL ERROR: TELEGRAM_BOT_TOKEN is missing or empty!")
+            print("Render Environment Variable ထဲမှာ Token ထည့်ပြီး 'Save Changes' နှိပ်ပါ။")
+            return  # Bot ရပ်သွားပါပြီ
+
+        print(f"✅ Token Loaded. Using token starting with: {TELEGRAM_BOT_TOKEN[:5]}...")
 
         if not SQLALCHEMY_AVAILABLE:
             print("❌ SQLAlchemy library is not installed. Bot cannot start.")
-            print("Please run: pip install sqlalchemy")
             return
 
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
-        # (!!!) RENDER FIX: Data တွေကို /app/data (Persistent Disk) မှာ သိမ်းပါ (!!!)
         DATA_DIR = "/app/data"
         persistence = PicklePersistence(filepath=f'{DATA_DIR}/bot_persistence')
+        print(f"✅ Persistence path set to: {DATA_DIR}/bot_persistence")
 
+        # --- (!!!) DEBUG: Token Error ကို ဒီနေရာမှာ ဖမ်းပါ (!!!) ---
+        try:
+            self.application = Application.builder().token(
+                TELEGRAM_BOT_TOKEN).persistence(persistence).build()
+            print("✅ Telegram Application built successfully.")
+        except Exception as e:
+            print("="*50)
+            print("❌❌❌ FATAL ERROR: BOT FAILED TO BUILD ❌❌❌")
+            print(f"Error Type: {type(e)}")
+            print(f"Error Message: {e}")
+            print("\nဒါက 99% သင့် TELEGRAM_BOT_TOKEN (Value) က အမှားကြီး ဖြစ်နေလို့ပါ (Invalid Token)။")
+            print("ကျေးဇူးပြု၍ @BotFather ဆီက Token အသစ်စက်စက် (NEW) တစ်ခု ယူပြီး၊")
+            print("Render Environment Variable ထဲမှာ အစားထိုး ထည့်ပါ။")
+            print("="*50)
+            return # Stop the bot
+        # --- End of Debug block ---
 
-        self.application = Application.builder().token(
-            TELEGRAM_BOT_TOKEN).persistence(persistence).build()
 
         # --- Handlers (User ဆီက Message တွေကို ဘယ်သူက တာဝန်ယူမလဲ) ---
-
-        # Command Handlers (/)
         self.application.add_handler(CommandHandler('start', self.start))
         self.application.add_handler(CommandHandler('help', self.help))
         self.application.add_handler(CommandHandler('privacy', self.privacy))
@@ -3190,23 +3207,14 @@ class MyanmarFinanceBot:
             CommandHandler('add_expense', self.add_expense))
         self.application.add_handler(CommandHandler(
             'grant_premium', self.grant_premium_command))
-
-        # Admin Command Handler
         self.application.add_handler(
             CommandHandler('admin', self.admin_dashboard))
-
-        # Message Handlers (ပုံ၊ File၊ စာသား)
         self.application.add_handler(MessageHandler(
             filters.PHOTO & ~filters.COMMAND, self.handle_screenshot))
-        
-        # (!!!) RENDER FIX: .JSON အမှားကို .ALL နဲ့ ပြင်ထားပါ (!!!)
         self.application.add_handler(MessageHandler(
             filters.Document.ALL, self.handle_backup_file))
-        
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, self.handle_message))
-
-        # Callback Handler (ခလုတ်နှိပ်ခြင်းများ)
         self.application.add_handler(
             CallbackQueryHandler(self.handle_callback))
 
@@ -3235,10 +3243,3 @@ class MyanmarFinanceBot:
             logger.info("Bot stopped manually.")
         except Exception as e:
             logger.critical(f"Bot failed to run: {e}", exc_info=True)
-        # --- Code အမှန် (Indentation မှန်ကန်) ---
-        if __name__ == '__main__':
-            if not TELEGRAM_AVAILABLE or not PANDAS_AVAILABLE or not SQLALCHEMY_AVAILABLE:
-                sys.exit(1)
-
-            bot = MyanmarFinanceBot()
-            bot.run()
