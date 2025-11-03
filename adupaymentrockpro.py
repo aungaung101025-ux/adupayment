@@ -738,7 +738,7 @@ class MyanmarFinanceBot:
         self.scheduler = AsyncIOScheduler()
 
         # --- (!!!) သင့် ADMIN ID အစစ်ကို ဤနေရာတွင် တိုက်ရိုက်ထည့်ပါ (!!!) ---
-        self.ADMIN_ID = int(os.environ.get('ADMIN_ID', 0))  # <-- ဥပမာ: 123456789 (ဂဏန်းသက်သက်)
+        self.ADMIN_ID = int(os.environ.get('ADMIN_ID', 0))  
 
         self.application: Optional[Application] = None
 
