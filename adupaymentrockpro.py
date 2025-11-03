@@ -3237,7 +3237,7 @@ class MyanmarFinanceBot:
         self.application.post_init = self.post_init_tasks
 
         # --- Bot ကို စတင်ခြင်း ---
-        print(f'🤖✅ V2 - Myanmar Finance Bot (All Features) is starting...')
+        print(f'🤖✅ V3 - Myanmar Finance Bot (All Features) is starting...')
         print(f'✅ Bot State Persistence: ENABLED (using {DATA_DIR}/bot_persistence)')
         print(f'✅ Database: ENABLED (using database_manager.py)')
         print(f'✅ Admin Approval System: ENABLED')
