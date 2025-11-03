@@ -82,15 +82,21 @@ PLOTLY_AVAILABLE = False
 KALEIDO_AVAILABLE = False
 print("DEBUG: V15 - Plotly and Kaleido are fully DISABLED.")
 
-# --- NEW: SQLAlchemy Check ---
+# --- NEW: SQLAlchemy Check (V16 TEST) ---
+print("DEBUG: V16 - Attempting to import SQLAlchemy...")
 try:
     import sqlalchemy
     SQLALCHEMY_AVAILABLE = True
-except ImportError:
+    print("✅ DEBUG: V16 - SQLAlchemy imported SUCCESSFULLY.")
+except ImportError as e:
     SQLALCHEMY_AVAILABLE = False
-    logger.critical(
-        "❌ sqlalchemy library not found. Please run 'pip install sqlalchemy'")
-    sys.exit(1)
+    print("="*50)
+    print("❌❌❌ FATAL CRASH (V16): No module named 'sqlalchemy' ❌❌❌")
+    print(f"Error details: {e}")
+    print("ကျေးဇူးပြု၍ 'requirements.txt' file ထဲမှာ 'sqlalchemy' ထည့်ပြီး push လုပ်ပါ။")
+    print("="*50)
+    import time
+    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
 
 
 # --- Font Path Setup ---
