@@ -1,15 +1,5 @@
-# adupaymentrock.py (Final Version - Render Ready)
-print("===== V12 FINAL CODE IS RUNNING =====")
-print("===== V8 ENTRYPOINT TEST - STARTING SCRIPT =====")
-try:
-    from database_manager import DatabaseManager
-    print("✅ SUCCESS: Imported database_manager.py")
-except ModuleNotFoundError as e:
-    print(f"❌❌❌ FATAL CRASH: {e} ❌❌❌")
-    print("ERROR: 'database_manager.py' file ကို ရှာမတွေ့ပါ (ModuleNotFoundError)။")
-    print("ကျေးဇူးပြု၍ 'database_manager.py' file ကို GitHub repository ထဲမှာ ထည့်ပြီး push လုပ်ပါ။")
-    import time
-    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
+# adupaymentrock.py (Final Version - All Steps Included)
+from database_manager import DatabaseManager
 import re
 import os
 import json
@@ -26,8 +16,7 @@ import datetime as dt  # Renamed for clarity
 import base64  # Needed for embedding charts in PDF
 
 # ----------------------- Config & Logging -----------------------
-# (!!!) Token ကို Test လုပ်ဖို့ တိုက်ရိုက် ထည့်သွင်းပါ (!!!)
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 EXPORT_DIR = 'exports'
 
 # --- NEW: DatabaseManager ---
@@ -36,23 +25,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(lineno)d', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# (!!!) V17 TEST: Check for python-telegram-bot (!!!)
-print("DEBUG: V17 - Attempting to import 'python-telegram-bot'...")
+# --- Third-party Libs ---
 try:
     from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, CallbackQuery
     from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes, PicklePersistence
     from telegram.constants import ParseMode
     TELEGRAM_AVAILABLE = True
-    print("✅ DEBUG: V17 - 'python-telegram-bot' imported SUCCESSFULLY.")
-except ImportError as e:
+except ImportError:
     TELEGRAM_AVAILABLE = False
-    print("="*50)
-    print("❌❌❌ FATAL CRASH (V17): No module named 'telegram' ❌❌❌")
-    print(f"Error details: {e}")
-    print("ကျေးဇူးပြု၍ 'requirements.txt' file ထဲမှာ 'python-telegram-bot' ထည့်ပြီး push လုပ်ပါ။")
-    print("="*50)
-    import time
-    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
+    logger.critical(
+        "❌ python-telegram-bot library not found. Please run 'pip install python-telegram-bot pandas plotly kaleido weasyprint openpyxl sqlalchemy'")
+    sys.exit(1)
 
 try:
     import pandas as pd
@@ -70,47 +53,50 @@ except ImportError:
     OPENPYXL_AVAILABLE = False
 
 # PDF libs: WeasyPrint
-# (!!!) V14 TEST: Commenting out WeasyPrint to see if it's the crash source (!!!)
-print("DEBUG: Skipping WeasyPrint import...")
-# try:
-#     from weasyprint import HTML, CSS
-#     WEASYPRINT_AVAILABLE = True
-# except (ImportError, OSError) as e:
-#     logger.critical(
-#         f"WeasyPrint is not available, PDF/Chart export will fail. Error: {e}")
-WEASYPRINT_AVAILABLE = False # <-- Set it to False manually
-print("DEBUG: WeasyPrint is now DISABLED.")
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    logger.critical(
+        f"WeasyPrint is not available, PDF/Chart export will fail. Error: {e}")
+    WEASYPRINT_AVAILABLE = False
 
 # Chart Lib: Plotly
-# (!!!) V15 TEST: Disabling ALL Plotly imports (!!!)
-print("DEBUG: V15 - Skipping ALL Plotly imports...")
-PLOTLY_AVAILABLE = False
-KALEIDO_AVAILABLE = False
-print("DEBUG: V15 - Plotly and Kaleido are fully DISABLED.")
+try:
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    import plotly.colors as px_colors
+    try:
+        import kaleido
+        KALEIDO_AVAILABLE = True
+    except ImportError:
+        KALEIDO_AVAILABLE = False
+        logger.warning(
+            "Kaleido not found ('pip install kaleido'). Plotly image export might be slower or fail.")
 
-# --- NEW: SQLAlchemy Check (V16 TEST) ---
-print("DEBUG: V16 - Attempting to import SQLAlchemy...")
+    PLOTLY_AVAILABLE = True
+    pio.templates.default = "plotly_white"
+except ImportError:
+    PLOTLY_AVAILABLE = False
+    logger.warning(
+        "Plotly not found ('pip install plotly kaleido'). Chart generation disabled.")
+
+# --- NEW: SQLAlchemy Check ---
 try:
     import sqlalchemy
     SQLALCHEMY_AVAILABLE = True
-    print("✅ DEBUG: V16 - SQLAlchemy imported SUCCESSFULLY.")
-except ImportError as e:
+except ImportError:
     SQLALCHEMY_AVAILABLE = False
-    print("="*50)
-    print("❌❌❌ FATAL CRASH (V16): No module named 'sqlalchemy' ❌❌❌")
-    print(f"Error details: {e}")
-    print("ကျေးဇူးပြု၍ 'requirements.txt' file ထဲမှာ 'sqlalchemy' ထည့်ပြီး push လုပ်ပါ။")
-    print("="*50)
-    import time
-    time.sleep(3600) # Crash loop မဖြစ်အောင် တမင် ရပ်ထားခိုင်းတာ
+    logger.critical(
+        "❌ sqlalchemy library not found. Please run 'pip install sqlalchemy'")
+    sys.exit(1)
 
 
 # --- Font Path Setup ---
-# (!!!) RENDER FIX: Dockerfile ထဲက /app/fonts/ ကို တိုက်ရိုက် ညွှန်းပါ (!!!)
-CURRENT_DIR = "/app" # os.path.dirname(os.path.abspath(sys.argv[0])) if os.path.dirname(os.path.abspath(sys.argv[0])) else os.getcwd()
+CURRENT_DIR = os.path.dirname(os.path.abspath(sys.argv[0])) if os.path.dirname(
+    os.path.abspath(sys.argv[0])) else os.getcwd()
 FONT_PATH = os.path.join(CURRENT_DIR, 'fonts', 'Pyidaungsu-Regular.ttf')
 CLEAN_FONT_PATH = FONT_PATH.replace(os.path.sep, '/')
-# -------------------------------------------------------------------
 
 # ----------------------- Texts (Myanmar/English) -----------------------
 TEXTS = {
@@ -750,7 +736,7 @@ class MyanmarFinanceBot:
         self.scheduler = AsyncIOScheduler()
 
         # --- (!!!) သင့် ADMIN ID အစစ်ကို ဤနေရာတွင် တိုက်ရိုက်ထည့်ပါ (!!!) ---
-        self.ADMIN_ID = int(os.environ.get('ADMIN_ID', 0))  
+        self.ADMIN_ID = 7200049630  # <-- ဥပမာ: 123456789 (ဂဏန်းသက်သက်)
 
         self.application: Optional[Application] = None
 
@@ -3164,45 +3150,25 @@ class MyanmarFinanceBot:
 
     def run(self):
         """Starts the bot."""
-        
-        # --- (!!!) DEBUG: Token ကို အရင်စစ်ပါ (!!!) ---
-        print("--- DEBUG: Checking Environment Variables ---")
-        
         if not TELEGRAM_BOT_TOKEN:
-            print("❌ FATAL ERROR: TELEGRAM_BOT_TOKEN is missing or empty!")
-            print("Render Environment Variable ထဲမှာ Token ထည့်ပြီး 'Save Changes' နှိပ်ပါ။")
-            return  # Bot ရပ်သွားပါပြီ
-
-        print(f"✅ Token Loaded. Using token starting with: {TELEGRAM_BOT_TOKEN[:5]}...")
+            print(
+                '❌ TELEGRAM_BOT_TOKEN is missing. Please set it in your code or environment variables.')
+            return
 
         if not SQLALCHEMY_AVAILABLE:
             print("❌ SQLAlchemy library is not installed. Bot cannot start.")
+            print("Please run: pip install sqlalchemy")
             return
 
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
-        DATA_DIR = "/app/data"
-        persistence = PicklePersistence(filepath=f'{DATA_DIR}/bot_persistence')
-        print(f"✅ Persistence path set to: {DATA_DIR}/bot_persistence")
+        persistence = PicklePersistence(filepath='bot_persistence')
 
-        # --- (!!!) DEBUG: Token Error ကို ဒီနေရာမှာ ဖမ်းပါ (!!!) ---
-        try:
-            self.application = Application.builder().token(
-                TELEGRAM_BOT_TOKEN).persistence(persistence).build()
-            print("✅ Telegram Application built successfully.")
-        except Exception as e:
-            print("="*50)
-            print("❌❌❌ FATAL ERROR: BOT FAILED TO BUILD ❌❌❌")
-            print(f"Error Type: {type(e)}")
-            print(f"Error Message: {e}")
-            print("\nဒါက 99% သင့် TELEGRAM_BOT_TOKEN (Value) က အမှားကြီး ဖြစ်နေလို့ပါ (Invalid Token)။")
-            print("ကျေးဇူးပြု၍ @BotFather ဆီက Token အသစ်စက်စက် (NEW) တစ်ခု ယူပြီး၊")
-            print("Render Environment Variable ထဲမှာ အစားထိုး ထည့်ပါ။")
-            print("="*50)
-            return # Stop the bot
-        # --- End of Debug block ---
-
+        self.application = Application.builder().token(
+            TELEGRAM_BOT_TOKEN).persistence(persistence).build()
 
         # --- Handlers (User ဆီက Message တွေကို ဘယ်သူက တာဝန်ယူမလဲ) ---
+
+        # Command Handlers (/)
         self.application.add_handler(CommandHandler('start', self.start))
         self.application.add_handler(CommandHandler('help', self.help))
         self.application.add_handler(CommandHandler('privacy', self.privacy))
@@ -3219,14 +3185,20 @@ class MyanmarFinanceBot:
             CommandHandler('add_expense', self.add_expense))
         self.application.add_handler(CommandHandler(
             'grant_premium', self.grant_premium_command))
+
+        # Admin Command Handler
         self.application.add_handler(
             CommandHandler('admin', self.admin_dashboard))
+
+        # Message Handlers (ပုံ၊ File၊ စာသား)
         self.application.add_handler(MessageHandler(
             filters.PHOTO & ~filters.COMMAND, self.handle_screenshot))
         self.application.add_handler(MessageHandler(
             filters.Document.ALL, self.handle_backup_file))
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, self.handle_message))
+
+        # Callback Handler (ခလုတ်နှိပ်ခြင်းများ)
         self.application.add_handler(
             CallbackQueryHandler(self.handle_callback))
 
@@ -3236,8 +3208,8 @@ class MyanmarFinanceBot:
 
         # --- Bot ကို စတင်ခြင်း ---
         print(f'🤖 Myanmar Finance Bot (All Features) is starting...')
-        print(f'✅ Bot State Persistence: ENABLED (using {DATA_DIR}/bot_persistence)')
-        print(f'✅ Database: ENABLED (using database_manager.py)')
+        print(f'✅ Bot State Persistence: ENABLED (using bot_persistence file)')
+        print(f'✅ Database: ENABLED (using financebot.db)')
         print(f'✅ Admin Approval System: ENABLED')
         print(f'✅ Admin Dashboard: ENABLED (use /admin command)')
         print(f'✅ Quick Add Feature: ENABLED')
@@ -3255,3 +3227,11 @@ class MyanmarFinanceBot:
             logger.info("Bot stopped manually.")
         except Exception as e:
             logger.critical(f"Bot failed to run: {e}", exc_info=True)
+
+
+if __name__ == '__main__':
+    if not TELEGRAM_AVAILABLE or not PANDAS_AVAILABLE or not SQLALCHEMY_AVAILABLE:
+        sys.exit(1)
+
+    bot = MyanmarFinanceBot()
+    bot.run()
