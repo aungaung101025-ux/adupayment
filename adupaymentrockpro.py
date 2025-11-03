@@ -3180,21 +3180,7 @@ class MyanmarFinanceBot:
             return
 
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
-        DATA_DIR = os.environ.get('DATA_DIR')
-        
-        if not DATA_DIR:
-            print("❌ FATAL ERROR: DATA_DIR environment variable is not set!")
-            print("Render Dashboard မှာ 'Disk' တစ်ခု ချိတ်ပြီး 'DATA_DIR' variable ကို သတ်မှတ်ပေးပါ။")
-            return  # Bot ရပ်သွားပါပြီ
-            
-        # DATA_DIR folder မရှိသေးရင် အလိုအလျောက် ဆောက်ပေးပါ
-        try:
-            os.makedirs(DATA_DIR, exist_ok=True)
-        except Exception as e:
-            print(f"❌ FATAL ERROR: Cannot create DATA_DIR at '{DATA_DIR}'. Error: {e}")
-            print("ဒါဟာ Read-only file system error ဖြစ်နိုင်ပါတယ်။ DATA_DIR path ကို စစ်ဆေးပါ။")
-            return # Bot ရပ်သွားပါပြီ
-
+        DATA_DIR = "/app/data"
         persistence = PicklePersistence(filepath=f'{DATA_DIR}/bot_persistence')
         print(f"✅ Persistence path set to: {DATA_DIR}/bot_persistence")
 
@@ -3249,7 +3235,7 @@ class MyanmarFinanceBot:
         self.application.post_init = self.post_init_tasks
 
         # --- Bot ကို စတင်ခြင်း ---
-        print(f'🤖✅ V7 - FINAL TEST - Myanmar Finance Bot (All Features) is starting...')
+        print(f'🤖 Myanmar Finance Bot (All Features) is starting...')
         print(f'✅ Bot State Persistence: ENABLED (using {DATA_DIR}/bot_persistence)')
         print(f'✅ Database: ENABLED (using database_manager.py)')
         print(f'✅ Admin Approval System: ENABLED')
