@@ -64,22 +64,28 @@ except ImportError:
     OPENPYXL_AVAILABLE = False
 
 # PDF libs: WeasyPrint
-try:
-    from weasyprint import HTML, CSS
-    WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError) as e:
-    logger.critical(
-        f"WeasyPrint is not available, PDF/Chart export will fail. Error: {e}")
-    WEASYPRINT_AVAILABLE = False
+# (!!!) V14 TEST: Commenting out WeasyPrint to see if it's the crash source (!!!)
+print("DEBUG: Skipping WeasyPrint import...")
+# try:
+#     from weasyprint import HTML, CSS
+#     WEASYPRINT_AVAILABLE = True
+# except (ImportError, OSError) as e:
+#     logger.critical(
+#         f"WeasyPrint is not available, PDF/Chart export will fail. Error: {e}")
+WEASYPRINT_AVAILABLE = False # <-- Set it to False manually
+print("DEBUG: WeasyPrint is now DISABLED.")
 
 # Chart Lib: Plotly
 try:
     import plotly.graph_objects as go
     import plotly.io as pio
     import plotly.colors as px_colors
+    print("DEBUG: Skipping Kaleido import...")
     try:
-        import kaleido
-        KALEIDO_AVAILABLE = True
+        # (!!!) V14 TEST: Commenting out Kaleido (!!!)
+        # import kaleido
+        KALEIDO_AVAILABLE = False # <-- Set it to False manually
+        print("DEBUG: Kaleido is now DISABLED.")
     except ImportError:
         KALEIDO_AVAILABLE = False
         logger.warning(
