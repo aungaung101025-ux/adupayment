@@ -621,29 +621,21 @@ class PlotlyChartManager:
     def _render_plotly_fig_to_png(self, fig, width=800, height=600) -> Optional[io.BytesIO]:
         if not self.PLOTLY_AVAILABLE:
             return None
-        if self.WEASYPRINT_AVAILABLE:
+        # WeasyPrint ကို မသုံးတော့ဘဲ Kaleido တစ်ခုတည်းကိုပဲ သုံးပါမည်။
+        if self.KALEIDO_AVAILABLE:
             try:
-                font_face_css = f"""
-                @font-face {{
-                    font-family: 'Pyidaungsu';
-                    src: url("file:///{CLEAN_FONT_PATH}"); 
-                }}
-                body {{ font-family: '{self.myanmar_font_family}'; }}
-                """
-                html_str = pio.to_html(
-                    fig, full_html=True, include_plotlyjs='cdn')
-                html_str = html_str.replace(
-                    '</head>', f'<style>{font_face_css}</style></head>', 1)
-
-                buffer = io.BytesIO()
-                HTML(string=html_str).write_png(
-                    buffer, presentational_hints=True)
+                buffer = io.BytesIO(pio.to_image(
+                    fig, format='png', width=width, height=height))
                 buffer.seek(0)
-                logger.info("✅ Plotly Chart rendered to PNG using WeasyPrint.")
+                logger.info("✅ Plotly Chart rendered to PNG using Kaleido.")
                 return buffer
             except Exception as e:
-                logger.warning(
-                    f"WeasyPrint failed to render Plotly HTML to PNG: {e}. Falling back to Kaleido.")
+                logger.error(f"Kaleido failed to render Plotly to PNG: {e}")
+        
+        # အပေါ်က Kaleido ပါ မအောင်မြင်ရင် Error ပြပါ
+        logger.error(
+            "❌ Failed to render Plotly chart to PNG. Kaleido is not working.")
+        return None
 
         if self.KALEIDO_AVAILABLE:
             try:
