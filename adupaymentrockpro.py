@@ -12,6 +12,8 @@ import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import sys
+import subprocess
+import shutil
 import datetime as dt  # Renamed for clarity
 import base64  # Needed for embedding charts in PDF
 
@@ -20,7 +22,64 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 EXPORT_DIR = 'exports'
 
 # --- NEW: DatabaseManager ---
+# -----------------------------------------------
+# 💡 NEW FONT INSTALLER (Python Method)
+# -----------------------------------------------
+def install_myanmar_font():
+    """
+    Render.com server ပေါ်တွင် မြန်မာ Font ကို Python code ဖြင့်
+    တိုက်ရိုက် သွင်းပေးသော function။
+    """
+    print("--- 💡 Starting Font Installation Check ---")
 
+    try:
+        # 1. Project folder ထဲက font file လမ်းကြောင်း
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_font_path = os.path.join(current_dir, 'fonts', 'Pyidaungsu-Regular.ttf')
+
+        # 2. Server မှာ Font သွင်းမယ့် နေရာ (~/.fonts)
+        font_dir = os.path.expanduser("~/.fonts")
+        target_font_path = os.path.join(font_dir, "Pyidaungsu-Regular.ttf")
+
+        # 3. Server မှာ Font ရှိ၊ မရှိ စစ်ဆေးခြင်း
+        if os.path.exists(target_font_path):
+            print(f"✅ Font '{target_font_path}' already exists. Skipping installation.")
+            return True
+
+        print(f"ℹ️ Font not found. Starting installation...")
+
+        # 4. Project folder ထဲမှာ Font file ရှိ၊ မရှိ စစ်ဆေးခြင်း
+        if not os.path.exists(project_font_path):
+            print(f"❌ CRITICAL: Source font '{project_font_path}' not found. Cannot install font.")
+            return False
+
+        # 5. ~/.fonts directory ကို ဆောက်ခြင်း
+        print(f"Creating directory '{font_dir}'...")
+        os.makedirs(font_dir, exist_ok=True)
+
+        # 6. Font file ကို copy ကူးထည့်ခြင်း
+        print(f"Copying '{project_font_path}' to '{font_dir}'...")
+        shutil.copy(project_font_path, font_dir)
+
+        # 7. Font cache ကို refresh လုပ်ခြင်း
+        print("Refreshing font cache using 'fc-cache'...")
+        subprocess.run(["fc-cache", "-fv"], check=True)
+
+        print("✅--- Font Installation Succeeded ---✅")
+        return True
+
+    except Exception as e:
+        print(f"❌--- Font Installation Failed ---❌")
+        print(f"Error: {e}")
+        return False
+
+# -----------------------------------------------
+# အခုပဲ Font သွင်းတဲ့ function ကို Run ပါ
+install_myanmar_font()
+# -----------------------------------------------
+
+
+# --- The rest of your code ... ---
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(lineno)d', level=logging.INFO)
 logger = logging.getLogger(__name__)
