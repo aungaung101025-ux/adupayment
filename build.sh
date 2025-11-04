@@ -16,5 +16,5 @@ cp fonts/Pyidaungsu-Regular.ttf ~/.fonts/
 # 4. Refresh font cache
 echo "Refreshing font cache..."
 fc-cache -fv
-
+# Force rebuild on Nov 5
 echo "Build script completed."
