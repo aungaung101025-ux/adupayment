@@ -151,9 +151,9 @@ TEXTS = {
     "premium_payment_kpay": "KBZPay",
     "premium_payment_aya": "AYA Bank",
 
-    "premium_payment_details_wave": "အမည်: `U Adu`\nဖုန်းနံပါတ်: `09 123 456 789`",
-    "premium_payment_details_kpay": "အမည်: `U Adu`\nဖုန်းနံပါတ်: `09 987 654 321`",
-    "premium_payment_details_aya": "အမည်: `U Adu`\nBank Account: `1234 5678 9012`",
+    "premium_payment_details_wave": "အမည်: `U Aung Thu`\nဖုန်းနံပါတ်: `09 676 587 798`",
+    "premium_payment_details_kpay": "အမည်: `U Aung Thu`\nဖုန်းနံပါတ်: `09 770 898 468`",
+    "premium_payment_details_aya": "အမည်: `U Aung Thu`\nBank Account: `1234 5678 9012`",
 
     "premium_granted": "🎉 **ဂုဏ်ယူပါတယ်!** သင်၏ Premium သုံးစွဲခွင့်ကို {end_date} နေ့အထိ ဖွင့်ပေးလိုက်ပါပြီ။ Premium လုပ်ဆောင်ချက်အားလုံးကို စတင်အသုံးပြုနိုင်ပါပြီ။",
     "premium_trial_granted": "🎁 **Free Trial စတင်ပါပြီ!**\nPremium လုပ်ဆောင်ချက်အားလုံးကို ၇ ရက် ( {end_date} နေ့အထိ ) အခမဲ့ သုံးစွဲနိုင်ပါပြီ။ မပြည့်ခင် အခပေး Plan သို့ ပြောင်းလဲနိုင်ပါသည်။",
@@ -169,7 +169,6 @@ TEXTS = {
 ၂။ ငွေလွှဲပြီးပါက အောက်ပါ **"ငွေလွှဲပြီးပါပြီ"** ခလုတ်ကို နှိပ်ပါ။
 ၃။ ထို့နောက် ငွေလွှဲ Screenshot ကို ဤ chat ထဲသို့ ပို့ပေးပါ။
 
-(Admin Link ကို ဖယ်ရှားပြီးပါပြီ)
 """,
     "premium_payment_complete_button": "✅ ငွေလွှဲပြီးပါပြီ (Screenshot ပို့ရန်)",
     "premium_awaiting_screenshot": "📸 ကျေးဇူးပြု၍ သင်၏ ငွေလွှဲ Screenshot ကို **ဤ chat ထဲသို့** အခု ပို့ပေးပါ။\n\nAdmin မှ စစ်ဆေးပြီး premium ကို ဖွင့်ပေးပါမည်။",
