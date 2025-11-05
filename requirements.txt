@@ -8,3 +8,4 @@ sqlalchemy
 apscheduler
 asyncio
 httpx
+psycopg2-binary
