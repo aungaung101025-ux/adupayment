@@ -3279,7 +3279,7 @@ class MyanmarFinanceBot:
             self.scheduler.start()
             logger.info("Scheduler started successfully in PTB event loop.")
 
-    def run(self):
+    async def run(self):
         """Starts the bot."""
         if not TELEGRAM_BOT_TOKEN:
             print(
@@ -3353,16 +3353,41 @@ class MyanmarFinanceBot:
             print("⚠️ Plotly is not installed. Chart generation will be disabled.")
 
         try:
-            self.application.run_polling(allowed_updates=Update.ALL_TYPES)
-        except KeyboardInterrupt:
-            logger.info("Bot stopped manually.")
+            # 1. Application ကို initialize လုပ်ပါ (ဒါက post_init ကိုပါ run ပေးပါလိမ့်မယ်)
+            await self.application.initialize()
+            
+            # 2. Polling ကို စတင်ပါ
+            await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+            
+            # 3. Handler တွေကို စတင် အလုပ်လုပ်ခိုင်းပါ
+            await self.application.start()
+            
+            logger.info("Bot is now running. Press Ctrl-C to stop.")
+            
+            # Script ဆက် run နေအောင် အကြာကြီး sleep ထားပါ
+            while True:
+                await asyncio.sleep(3600)
+                
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("Bot stopping (received interrupt)...")
         except Exception as e:
             logger.critical(f"Bot failed to run: {e}", exc_info=True)
-
+        finally:
+            # Error တက်ရင် (ဒါမှမဟုတ် Ctrl-C နှိပ်ရင်) အားလုံးကို သေချာ ပြန်ပိတ်ပါ
+            if self.application:
+                await self.application.stop()
+                if self.application.updater:
+                    await self.application.updater.stop()
+                if self.scheduler.running:
+                    self.scheduler.shutdown()
+            logger.info("Bot stopped.")
 
 if __name__ == '__main__':
     if not TELEGRAM_AVAILABLE or not PANDAS_AVAILABLE or not SQLALCHEMY_AVAILABLE:
         sys.exit(1)
 
     bot = MyanmarFinanceBot()
-    bot.run()
+    try:
+        asyncio.run(bot.run())
+    except KeyboardInterrupt:
+        logger.info("Bot stopped manually from console.")
