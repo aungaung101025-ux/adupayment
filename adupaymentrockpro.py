@@ -367,7 +367,29 @@ TEXTS = {
     "restore_error_json": "❌ Error: ပို့လိုက်သော file သည် JSON file ပုံစံ မမှန်ကန်ပါ။",
     "restore_error_format": "❌ Error: ဤ file သည် ကျွန်ုပ်တို့၏ Backup file ပုံစံ မဟုတ်ပါ။ (Data များ မစုံလင်ပါ)",
     "restore_error_general": "❌ Restore ပြုလုပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။",
-    "restore_cancelled": "❌ Restore ပြုလုပ်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။"
+    "restore_cancelled": "❌ Restore ပြုလုပ်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။",
+
+    # ... (တခြား TEXTS တွေ)
+
+    # (!!!) အောက်ပါ Code Block အသစ်ကို ထပ်ထည့်ပါ (!!!)
+    # --- Generic Info Button Text ---
+    "info_button_text": "ℹ️ အသုံးပြုပုံ", # <-- ခလုတ် နာမည်ကို တစ်နေရာတည်းမှာ ထိန်းချုပ်ရန်
+    
+    # --- Info Text (ရှင်းပြချက်များ) ---
+    "info_analytics_text": "သင့်ရဲ့ ဝင်ငွေ/ထွက်ငွေ စာရင်းတွေကို Pie Chart, Bar Chart တွေနဲ့ အမြင်အာရုံဖြင့် ရှင်းလင်းစွာ ကြည့်ရှုနိုင်တဲ့ feature ပါ။",
+    "info_ai_analysis_text": "သင့်ရဲ့ ဝင်ငွေ/ထွက်ငွေ ပုံစံကို AI က နေ့စဉ် သုံးသပ်ပြီး၊ ဘယ်နေရာမှာ ပိုသုံးနေလဲ၊ ဘယ်လို ချွေတာသင့်လဲ အကြံဉာဏ် ပေးမယ့် feature ပါ။",
+    "info_custom_category_text": "ဒါက 'Gym ကစားခ', 'Pet Food' လိုမျိုး သင့်ရဲ့ ကိုယ်ပိုင် ဝင်ငွေ/ထွက်ငွေ Category အသစ်တွေ ထည့်/ဖျက် လုပ်နိုင်တဲ့ feature ပါ။",
+    "info_custom_report_text": "သင်လိုချင်တဲ့ ရက်စွဲ (ဥပမာ- 10/01/2024 မှ 10/15/2024 အထိ) အတွင်းက ငွေစာရင်းတွေကိုပဲ သီးသန့် PDF/Excel ထုတ်ယူနိုင်တဲ့ feature ပါ။",
+    "info_goal_tracking_text": "'ဖုန်းအသစ်ဝယ်ရန်' လိုမျိုး ပန်းတိုင်တွေ သတ်မှတ်ပြီး၊ ပိုက်ဆံ ဘယ်လောက် စုပြီးပြီလဲ၊ ဘယ်လောက် လိုသေးလဲ ခြေရာခံနိုင်တဲ့ feature ပါ။",
+    "info_recurring_tx_text": "'အိမ်လခ', 'လစဉ် ဘေလ်' လိုမျိုး လတိုင်း ပုံမှန် ဝင်/ထွက် တဲ့ ငွေစာရင်းတွေကို bot က အလိုအလျောက် မှတ်သားပေးမယ့် feature ပါ။",
+    "info_backup_restore_text": "သင့်ငွေစာရင်း Data တွေအားလုံးကို .json file အဖြစ် ထုတ်ယူ သိမ်းဆည်းထားနိုင်ပြီး၊ ဖုန်းပျောက်/အကောင့်ပြောင်း တဲ့အခါ Data တွေ ပြန်ထည့်နိုင်တဲ့ feature ပါ။",
+    
+    # --- Reminder Feature အတွက် အသစ် (၂) ခု ---
+    "info_daily_reminder_text": "သင့်ရဲ့ နေ့စဉ် ငွေစာရင်း ထည့်သွင်းဖို့ မနက် ၉ နာရီ နှင့် ည ၇ နာရီ တွင် သတိပေးမယ့် feature ပါ။",
+    "info_weekly_summary_text": "သင် သတ်မှတ်ထားတဲ့ နေ့ (ဥပမာ- တနင်္ဂနွေ) ရောက်တိုင်း၊ အဲ့ဒီ အပတ်ရဲ့ ငွေစာရင်း အကျဉ်းချုပ်ကို အလိုအလျောက် ပို့ပေးမယ့် feature ပါ။",
+    # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
+    
+    "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\n ... (ကျန်တဲ့ TEXTS တွေ)
 
 }
 # -------------------------------------------------------------------
@@ -820,10 +842,9 @@ class MyanmarFinanceBot:
         goals = self.data_manager.get_all_goals(user_id)
 
         keyboard = [
-            [InlineKeyboardButton("➕ ပန်းတိုင်အသစ် ထည့်ရန်",
-                                  callback_data='goal_add_start')],
-            [InlineKeyboardButton(
-                "👀 ပန်းတိုင်များ အခြေအနေကြည့်ရန်", callback_data='goal_view_progress')]
+            [InlineKeyboardButton("➕ ပန်းတိုင်အသစ် ထည့်ရန်", callback_data='goal_add_start')],
+            [InlineKeyboardButton("👀 ပန်းတိုင်များ အခြေအနေကြည့်ရန်", callback_data='goal_view_progress')],
+            [InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_goal_tracking')] # <-- ထည့်ရန်
         ]
 
         if goals:
@@ -963,7 +984,9 @@ class MyanmarFinanceBot:
             [InlineKeyboardButton(
                 f"📉 {month_str} ထွက်ငွေ (Bar Chart)", callback_data='analytics_expense_monthly_bar')],
             [InlineKeyboardButton(
-                f"💰 {month_str} ဝင်ငွေ (Bar Chart)", callback_data='analytics_income_monthly_bar')]
+                f"💰 {month_str} ဝင်ငွေ (Bar Chart)", callback_data='analytics_income_monthly_bar')],
+            [InlineKeyboardButton(
+                TEXTS["info_button_text"], callback_data='info_analytics')] # <-- ထည့်ရန်
         ]
 
         message_text = f"📊 **အသေးစိတ် ခွဲခြမ်းစိတ်ဖြာချက်**\n\nသင်လိုချင်သော ခွဲခြမ်းစိတ်ဖြာချက် အမျိုးအစားကို ရွေးချယ်နိုင်ပါသည်။"
@@ -980,10 +1003,9 @@ class MyanmarFinanceBot:
             return
 
         keyboard = [
-            [InlineKeyboardButton("➕ Category အသစ်ထည့်ရန်",
-                                  callback_data='cat_add')],
-            [InlineKeyboardButton("➖ Category ဖယ်ရှားရန်",
-                                  callback_data='cat_remove')]
+            [InlineKeyboardButton("➕ Category အသစ်ထည့်ရန်", callback_data='cat_add')],
+            [InlineKeyboardButton("➖ Category ဖယ်ရှားရန်", callback_data='cat_remove')],
+            [InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_category')] # <-- ထည့်ရန်
         ]
 
         if update.callback_query:
@@ -1039,16 +1061,31 @@ class MyanmarFinanceBot:
             message_text = f"✅ **Premium Active!**\n\n**ကုန်ဆုံးရက်:** `{end_date}`\n\nPremium လုပ်ဆောင်ချက်အားလုံးကို သုံးစွဲနိုင်ပါပြီ။\n\n{TEXTS['premium_menu_content']}"
 
             premium_buttons = [
-                [InlineKeyboardButton(
-                    "📊 အသေးစိတ် ခွဲခြမ်းစိတ်ဖြာချက်", callback_data='open_analytics_menu')],
-                [InlineKeyboardButton(
-                    TEXTS["ai_analysis_button"], callback_data='ai_analysis')],
-                [InlineKeyboardButton(
-                    "🏷️ စိတ်ကြိုက် Category", callback_data='open_custom_category_menu')],
-                [InlineKeyboardButton(
-                    "📄 Custom Report", callback_data='start_custom_report')],
-                [InlineKeyboardButton(
-                    "🎯 ငွေကြေး ပန်းတိုင်များ", callback_data='goal_tracking_menu')],
+                # Row 1: Analytics
+                [
+                    InlineKeyboardButton("📊 အသေးစိတ် ခွဲခြမ်းစိတ်ဖြာချက်", callback_data='open_analytics_menu'),
+                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_analytics')
+                ],
+                # Row 2: AI Analysis
+                [
+                    InlineKeyboardButton(TEXTS["ai_analysis_button"], callback_data='ai_analysis'),
+                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_ai_analysis')
+                ],
+                # Row 3: Custom Category
+                [
+                    InlineKeyboardButton("🏷️ စိတ်ကြိုက် Category", callback_data='open_custom_category_menu'),
+                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_category')
+                ],
+                # Row 4: Custom Report
+                [
+                    InlineKeyboardButton("📄 Custom Report", callback_data='start_custom_report'),
+                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_report')
+                ],
+                # Row 5: Goal Tracking
+                [
+                    InlineKeyboardButton("🎯 ငွေကြေး ပန်းတိုင်များ", callback_data='goal_tracking_menu'),
+                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_goal_tracking')
+                ]
             ]
             reply_markup = InlineKeyboardMarkup(premium_buttons)
         else:
@@ -1103,10 +1140,14 @@ class MyanmarFinanceBot:
         daily_text = f"နေ့စဉ် ငွေစာရင်း သတိပေးချက် (၉ နာရီ/ ည ၇ နာရီ): {daily_status}"
 
         keyboard = [
-            [InlineKeyboardButton(
-                daily_text, callback_data='toggle_daily_reminder')],
-            [InlineKeyboardButton(
-                weekly_text, callback_data='weekly_reminder_select_day')]
+            [
+                InlineKeyboardButton(daily_text, callback_data='toggle_daily_reminder'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_daily_reminder') # <-- ထည့်ရန်
+            ],
+            [
+                InlineKeyboardButton(weekly_text, callback_data='weekly_reminder_select_day'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_weekly_summary') # <-- ထည့်ရန်
+            ]
         ]
 
         if update.callback_query:
@@ -1863,6 +1904,30 @@ class MyanmarFinanceBot:
         await query.answer()
 
         state = context.user_data
+        # (!!!) အောက်က block အသစ်ကို ဒီနေရာမှာ ထပ်ထည့်ပါ (!!!)
+        elif data.startswith('info_'):
+            # data က 'info_custom_category' ဖြစ်ပါစေ၊ 'info_goal_tracking' ဖြစ်ပါစေ၊
+            # အဲ့ဒီ data ကို key အဖြစ် တိုက်ရိုက် သုံးပါမယ်။
+            text_key = f"{data}_text" # ဥပမာ- "info_custom_category_text"
+            
+            info_text = TEXTS.get(text_key) # TEXTS dict ထဲက ရှင်းပြချက်ကို ရှာပါ
+            
+            if not info_text:
+                # အကယ်၍ TEXTS ထဲမှာ ရှင်းပြချက် ထည့်ဖို့ မေ့ကျန်ခဲ့ရင်
+                info_text = "ℹ️ ဤ feature အတွက် ရှင်းပြချက် မရှိသေးပါ။"
+                
+            try:
+                # User နှိပ်လိုက်တဲ့အခါ Pop-up message အနေနဲ့ ရှင်းပြချက်ကို ပြပါ
+                await query.answer(
+                    info_text,
+                    show_alert=True, # Pop-up box အနေနဲ့ ပြပါ
+                    cache_time=30    # 30 seconds အတွင်း ထပ်နှိပ်ရင် bot ကို ထပ်မမေးဘဲ ပြပါ
+                )
+            except Exception as e:
+                logger.error(f"Failed to send info alert: {e}")
+            return # Message ကို edit လုပ်စရာမလိုလို့ ဒီမှာတင် ရပ်လိုက်ပါ
+        
+        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
 
         # --- (STEP 6) NEW: Backup/Restore Callbacks ---
         if data == 'backup_restore_menu':
@@ -2994,10 +3059,14 @@ class MyanmarFinanceBot:
         keyboard = []
 
         if is_premium:
-            keyboard.append([InlineKeyboardButton(
-                TEXTS["backup_restore_button"], callback_data='backup_restore_menu')])
-            keyboard.append([InlineKeyboardButton(
-                "🔁 လစဉ် ထပ်တလဲလဲ (Recurring)", callback_data='recurring_tx_menu')])
+            keyboard.append([
+                InlineKeyboardButton(TEXTS["backup_restore_button"], callback_data='backup_restore_menu'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_backup_restore') # <-- ထည့်ရန်
+            ])
+            keyboard.append([
+                InlineKeyboardButton("🔁 လစဉ် ထပ်တလဲလဲ (Recurring)", callback_data='recurring_tx_menu'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_recurring_tx') # <-- ထည့်ရန်
+            ])
 
         if not recent_txs:
             if not is_premium:
