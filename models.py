@@ -1,11 +1,12 @@
-# models.py
+# models.py (FIXED VERSION)
 import os
 import sys
 import logging
 import uuid
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base,BigInteger
+# BigInteger ကို ဒီနေရာမှာ import လုပ်ရပါမယ်
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint, BigInteger
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
 # --- Base and Engine Setup (NEW PostgreSQL) ---
 
@@ -50,6 +51,7 @@ class BaseMixin:
 
 class User(Base):
     __tablename__ = 'user'
+    # ဒါက မှန်ပြီးသားပါ
     id = Column(BigInteger, primary_key=True, autoincrement=False) # Telegram User ID
     
     # Premium Status
@@ -80,7 +82,8 @@ class Transaction(Base, BaseMixin):
     description = Column(String)
     category = Column(String)
     
-    user_id = Column(Integer, ForeignKey('user.id'))
+    # 💡 FIX 1: Integer -> BigInteger
+    user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="transactions")
 
 class Budget(Base):
@@ -91,7 +94,8 @@ class Budget(Base):
     category = Column(String)
     amount = Column(Integer)
     
-    user_id = Column(Integer, ForeignKey('user.id'))
+    # 💡 FIX 2: Integer -> BigInteger
+    user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="budgets")
     
     __table_args__ = (UniqueConstraint('user_id', 'category', name='_user_category_uc'),)
@@ -106,7 +110,8 @@ class Goal(Base, BaseMixin):
     target_date = Column(DateTime)
     start_date = Column(DateTime, default=datetime.now)
     
-    user_id = Column(Integer, ForeignKey('user.id'))
+    # 💡 FIX 3: Integer -> BigInteger
+    user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="goals")
 
 class CustomCategory(Base):
@@ -117,7 +122,8 @@ class CustomCategory(Base):
     type = Column(String(10)) # 'income' or 'expense'
     name = Column(String)
     
-    user_id = Column(Integer, ForeignKey('user.id'))
+    # 💡 FIX 4: Integer -> BigInteger
+    user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="custom_categories")
 
 class RecurringTx(Base, BaseMixin):
@@ -131,7 +137,8 @@ class RecurringTx(Base, BaseMixin):
     category = Column(String)
     day = Column(Integer) # Day of month (1-28)
     
-    user_id = Column(Integer, ForeignKey('user.id'))
+    # 💡 FIX 5: Integer -> BigInteger
+    user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="recurring_txs")
 
 # --- Initial Setup Function ---
