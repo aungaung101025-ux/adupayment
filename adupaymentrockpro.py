@@ -1901,8 +1901,6 @@ class MyanmarFinanceBot:
         user_id = query.from_user.id
         data = query.data
 
-        await query.answer()
-
         state = context.user_data
 
         # (!!!) အမှားပြင်ဆင်ချက်- ပထမဆုံး check ဖြစ်တဲ့အတွက် 'elif' မဟုတ်ဘဲ 'if' ကို သုံးပါ (!!!)
