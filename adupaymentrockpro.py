@@ -1904,8 +1904,9 @@ class MyanmarFinanceBot:
         await query.answer()
 
         state = context.user_data
-    # (!!!) အောက်က block အသစ်ကို ဒီနေရာမှာ ထပ်ထည့်ပါ (!!!)
-        elif data.startswith('info_'):
+
+        # (!!!) အမှားပြင်ဆင်ချက်- ပထမဆုံး check ဖြစ်တဲ့အတွက် 'elif' မဟုတ်ဘဲ 'if' ကို သုံးပါ (!!!)
+        if data.startswith('info_'):
             # data က 'info_custom_category' ဖြစ်ပါစေ၊ 'info_goal_tracking' ဖြစ်ပါစေ၊
             # အဲ့ဒီ data ကို key အဖြစ် တိုက်ရိုက် သုံးပါမယ်။
             text_key = f"{data}_text" # ဥပမာ- "info_custom_category_text"
@@ -1926,10 +1927,11 @@ class MyanmarFinanceBot:
             except Exception as e:
                 logger.error(f"Failed to send info alert: {e}")
             return # Message ကို edit လုပ်စရာမလိုလို့ ဒီမှာတင် ရပ်လိုက်ပါ
-
-        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!)    
+        
+        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) 
 
         # --- (STEP 6) NEW: Backup/Restore Callbacks ---
+        # (!!!) အခု 'if' ရှိသွားပြီမို့၊ ဒီနေရာမှာ 'elif' ကို ဆက်သုံးလို့ ရပါပြီ (!!!)
         elif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
                 return
@@ -1950,6 +1952,8 @@ class MyanmarFinanceBot:
         elif data == 'backup_start':
             if not await self.check_premium(user_id, context):
                 return
+            
+            # ... (ကျန်တဲ့ code တွေ ဒီအတိုင်း ဆက်ထားပါ) ...
 
             await query.edit_message_text(TEXTS["backup_prompt_sending"])
 
