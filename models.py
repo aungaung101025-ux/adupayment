@@ -5,7 +5,7 @@ import logging
 import uuid
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base
+from sqlalchemy.orm import relationship, sessionmaker, declarative_base,BigInteger
 
 # --- Base and Engine Setup (NEW PostgreSQL) ---
 
@@ -49,10 +49,8 @@ class BaseMixin:
 # --- Table Definitions ---
 
 class User(Base):
-    """ Telegram User """
     __tablename__ = 'user'
-    
-    id = Column(Integer, primary_key=True) # Telegram User ID
+    id = Column(BigInteger, primary_key=True, autoincrement=False) # Telegram User ID
     
     # Premium Status
     premium_is_premium = Column(Boolean, default=False)
