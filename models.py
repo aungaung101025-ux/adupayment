@@ -1,16 +1,35 @@
 # models.py
 import os
+import sys
+import logging
 import uuid
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship, sessionmaker, declarative_base
 
-# --- Base and Engine Setup ---
-# Data တွေကို Render ရဲ့ Persistent Disk ထဲမှာ သိမ်းပါမယ်
-DATA_DIR = "/app/data"
-DATABASE_URL = f"sqlite:///{DATA_DIR}/financebot.db"
-engine = create_engine(DATABASE_URL)
+# --- Base and Engine Setup (NEW PostgreSQL) ---
+
+logger = logging.getLogger(__name__)
+
+# 1. Render က "Environment" မှာ ထည့်ထားတဲ့ URL ကို ဖတ်ပါ
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+# 2. URL ရှိမရှိ စစ်ဆေးပါ
+if not DATABASE_URL:
+    logger.critical("❌ DATABASE_URL environment variable is not set. Bot cannot start.")
+    logger.critical("Please add DATABASE_URL (Internal DB URL) to Render Environment.")
+    sys.exit(1)
+
+# 3. PostgreSQL Database Engine ကို ဆောက်ပါ
+try:
+    # 'pool_recycle' က connection တွေ အချိန်ကြာရင် auto ပြတ်မသွားအောင် ထိန်းပေးပါတယ်
+    engine = create_engine(DATABASE_URL, pool_recycle=3600)
+except Exception as e:
+    logger.critical(f"❌ Failed to create database engine with URL: {e}")
+    sys.exit(1)
+
 Base = declarative_base()
+# --- End of Engine Setup ---
 
 # --- Helper function for converting objects to dictionaries ---
 class BaseMixin:
