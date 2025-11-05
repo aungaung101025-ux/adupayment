@@ -1904,18 +1904,18 @@ class MyanmarFinanceBot:
         await query.answer()
 
         state = context.user_data
-        # (!!!) အောက်က block အသစ်ကို ဒီနေရာမှာ ထပ်ထည့်ပါ (!!!)
+    # (!!!) အောက်က block အသစ်ကို ဒီနေရာမှာ ထပ်ထည့်ပါ (!!!)
         elif data.startswith('info_'):
             # data က 'info_custom_category' ဖြစ်ပါစေ၊ 'info_goal_tracking' ဖြစ်ပါစေ၊
             # အဲ့ဒီ data ကို key အဖြစ် တိုက်ရိုက် သုံးပါမယ်။
             text_key = f"{data}_text" # ဥပမာ- "info_custom_category_text"
-            
+
             info_text = TEXTS.get(text_key) # TEXTS dict ထဲက ရှင်းပြချက်ကို ရှာပါ
-            
+
             if not info_text:
                 # အကယ်၍ TEXTS ထဲမှာ ရှင်းပြချက် ထည့်ဖို့ မေ့ကျန်ခဲ့ရင်
                 info_text = "ℹ️ ဤ feature အတွက် ရှင်းပြချက် မရှိသေးပါ။"
-                
+
             try:
                 # User နှိပ်လိုက်တဲ့အခါ Pop-up message အနေနဲ့ ရှင်းပြချက်ကို ပြပါ
                 await query.answer(
@@ -1926,11 +1926,11 @@ class MyanmarFinanceBot:
             except Exception as e:
                 logger.error(f"Failed to send info alert: {e}")
             return # Message ကို edit လုပ်စရာမလိုလို့ ဒီမှာတင် ရပ်လိုက်ပါ
-        
-        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
+
+        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!)    
 
         # --- (STEP 6) NEW: Backup/Restore Callbacks ---
-        elifif data == 'backup_restore_menu':
+        elif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
                 return
 
