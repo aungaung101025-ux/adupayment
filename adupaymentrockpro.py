@@ -387,6 +387,8 @@ TEXTS = {
     # --- Reminder Feature အတွက် အသစ် (၂) ခု ---
     "info_daily_reminder_text": "သင့်ရဲ့ နေ့စဉ် ငွေစာရင်း ထည့်သွင်းဖို့ မနက် ၉ နာရီ နှင့် ည ၇ နာရီ တွင် သတိပေးမယ့် feature ပါ။",
     "info_weekly_summary_text": "သင် သတ်မှတ်ထားတဲ့ နေ့ (ဥပမာ- တနင်္ဂနွေ) ရောက်တိုင်း၊ အဲ့ဒီ အပတ်ရဲ့ ငွေစာရင်း အကျဉ်းချုပ်ကို အလိုအလျောက် ပို့ပေးမယ့် feature ပါ။",
+    "info_monthly_report_text": "သင်၏ လစဉ် ငွေစာရင်း အပြည့်အစုံကို PDF သို့မဟုတ် Excel file အဖြစ် ထုတ်ယူနိုင်ပါသည်။",
+    "info_quick_add_text": "သင် ရိုက်ထည့်လိုက်သော ပမာဏကို 'ဝင်ငွေ' လား 'ထွက်ငွေ' လား ရွေးချယ်ပြီး အမြန် မှတ်တမ်းတင်နိုင်ပါသည်။",
     # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
     
     "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\nဤလုပ်ဆောင်ချက်သည် Premium အသုံးပြုသူများအတွက်သာ ဖြစ်ပါသည်။\n\nPremium Plan ဝယ်ယူရန် 'Premium Plan ယူရန်' ကို နှိပ်ပါ သို့မဟုတ် ၇ ရက် အစမ်းသုံးရန် 'Free Trial' ကို နှိပ်ပါ။",
@@ -1268,9 +1270,15 @@ class MyanmarFinanceBot:
                                for d in dates)), reverse=True)
         keyboard = [[InlineKeyboardButton(format_myanmar_date(dt.datetime(
             year, month, 1)), callback_data=f'select_month_{year}-{month}')] for year, month in unique_months]
-
+        
+        # (!!!) အောက်က (၂) ခုကို အသစ် ပြင်ဆင်/ထည့်သွင်းပါ (!!!)
+        keyboard.append([
+            InlineKeyboardButton("📄 Custom Date Report", callback_data='start_custom_report'),
+            InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_report') # <-- Info Button ထည့်ရန်
+        ])
+        
         keyboard.append([InlineKeyboardButton(
-            "📄 Custom Date Report", callback_data='start_custom_report')])
+            TEXTS["info_button_text"], callback_data='info_monthly_report')]) # <-- Info Button ထည့်ရန်
 
         await context.bot.send_message(user_id, TEXTS["export_select_month"], reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -1585,7 +1593,9 @@ class MyanmarFinanceBot:
                     [InlineKeyboardButton(
                         TEXTS["quick_add_type_income"], callback_data='quick_add_type_income')],
                     [InlineKeyboardButton(
-                        TEXTS["quick_add_type_expense"], callback_data='quick_add_type_expense')]
+                        TEXTS["quick_add_type_expense"], callback_data='quick_add_type_expense')],
+                    [InlineKeyboardButton(
+                        TEXTS["info_button_text"], callback_data='info_quick_add')] # <-- ထည့်ရန်
                 ]
 
                 await update.message.reply_text(
