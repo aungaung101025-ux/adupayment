@@ -1930,7 +1930,7 @@ class MyanmarFinanceBot:
         # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
 
         # --- (STEP 6) NEW: Backup/Restore Callbacks ---
-        if data == 'backup_restore_menu':
+        elifif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
                 return
 
