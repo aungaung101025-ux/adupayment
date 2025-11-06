@@ -2043,8 +2043,8 @@ class MyanmarFinanceBot:
             await self.account_add_prompt(update, context)
             return
         # --- (!!!) End of New Callbacks (!!!) ---
-        
-        # --- (!!!) NEW: Handle Account Selection for Transaction (!!!) ---
+
+        # --- (!!!) NEW: Handle Account Selection for Transaction (FINAL FIX) (!!!) ---
         elif data.startswith('tx_select_account_') and state.get('mode') == 'awaiting_account_selection':
             tx_data = state.get('tx_data')
             
@@ -2080,12 +2080,13 @@ class MyanmarFinanceBot:
                     account_id=account_id # <-- Account ID အစစ်
                 )
                 
-                # (!!!) --- FIXED BLOCK --- (!!!)
+                # (!!!) --- FINAL FIXED BLOCK (!!!) ---
                 # Account နာမည်ကို ပြန်ရှာပြီး user ကို ပြပါ
-                # get_accounts() က List[Dict] ကို ပြန်ပေးမှာ ဖြစ်လို့ Dict syntax ကို သုံးပါ
                 account_list = self.data_manager.get_accounts(user_id)
+                # 'account' ဆိုတဲ့ variable ထဲကို ရှာတွေ့တဲ့ dict ကို ထည့်ပါ
                 account = next((acc for acc in account_list if acc['id'] == account_id), None)
-                account_name = acc['name'] if account else "Unknown" # <-- (!!!) acc.id -> acc['id'] & acc.name -> acc['name']
+                # 'acc' ကို မသုံးဘဲ၊ 'account' variable ကို သုံးပါ
+                account_name = account['name'] if account else "Unknown" 
                 # (!!!) --- END OF FIX --- (!!!)
                 
                 await query.edit_message_text(TEXTS["data_saved_with_account"].format(
@@ -2102,6 +2103,7 @@ class MyanmarFinanceBot:
             
             return
         # --- (!!!) End of New Transaction Callback (!!!) ---
+        
         # --- (STEP 6) NEW: Backup/Restore Callbacks (Corrected - ONE TIME ONLY) ---
         elif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
