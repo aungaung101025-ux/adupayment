@@ -101,10 +101,13 @@ class DatabaseManager:
         """Helper to find an account by name."""
         return session.query(Account).filter_by(user_id=user_id, name=name).first()
 
-    def get_accounts(self, user_id: int) -> List[Account]:
-        """Gets all accounts for a user."""
+    def get_accounts(self, user_id: int) -> List[Dict[str, Any]]: # <-- (!!!) Return Type ကို ပြောင်းပါ
+        """Gets all accounts for a user as dictionaries."""
         with get_session() as session:
-            return session.query(Account).filter_by(user_id=user_id).order_by(Account.name).all()
+            accounts = session.query(Account).filter_by(user_id=user_id).order_by(Account.name).all()
+            # (!!!) Object အစစ်အစား၊ Dictionary တွေ ပြန်ပေးပါ (!!!)
+            # ဒါမှ DetachedInstanceError နဲ့ TypeError နှစ်ခုလုံးကနေ ကင်းဝေးမှာပါ
+            return [{"id": acc.id, "name": acc.name} for acc in accounts]
 
     def calculate_account_balance(self, session: Session, account_id: str) -> int:
         """Calculates the current balance for a single account."""
