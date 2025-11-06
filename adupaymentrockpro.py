@@ -190,7 +190,7 @@ TEXTS = {
     "invalid_format": "❌ ပုံစံမမှန်ကန်ပါ။ ကျေးဇူးပြု၍ `ဝင်ငွေ/ထွက်ငွေ [ပမာဏ] [ဖော်ပြချက်]` ပုံစံဖြင့် ရိုက်ထည့်ပေးပါ။ ပမာဏမှာ ဂဏန်းသာ ဖြစ်ရပါမည်။",
     "data_saved": "✅ {category} အတွက် {amount:,.0f} Ks ကို မှတ်တမ်းတင်လိုက်ပါပြီ။",
     "summary_current_month": "{month} အတွက် စုစုပေါင်း ငွေကြေးအခြေအနေ:",
-    "summary_details": "📈 စုစုပေါင်း ဝင်ငွေ: {income:,.0f} Ks\n📉 စုစုပေါင်း ထွက်ငွေ: {expense:,.0f} Ks\n💵 လက်ကျန်ငွေ: {balance:,.0f} Ks",
+    "summary_details": "📈 စုစုပေါင်း ဝင်ငွေ: {income:,.0f} Ks\n📉 စုစုပေါင်း ထွက်ငွေ: {expense:,.0f} Ks\n💵 ယခုလ လက်ကျန်: {balance:,.0f} Ks",
     "no_data": "ℹ️ မှတ်တမ်းတင်ထားသော ငွေကြေးအချက်အလက် မရှိသေးပါ။",
     "export_select_month": "အစီရင်ခံစာ ထုတ်ယူလိုသော လကို ရွေးချယ်ပါ။",
     "export_select_type": "အစီရင်ခံစာအတွက် File အမျိုးအစားကို ရွေးချယ်ပါ။",
@@ -438,6 +438,13 @@ TEXTS = {
     "account_list_unassigned": "\n**Account မခွဲရသေးသော လက်ကျန်:** {unassigned:,.0f} Ks",
     "account_list_grand_total": "\n\n**Grand Total:** {total:,.0f} Ks",
     "account_list_empty": "ℹ️ သင့်တွင် Account များ ဖန်တီးထားခြင်း မရှိသေးပါ။ 'Account အသစ်ထည့်ရန်' ခလုတ်ကို နှိပ်ပြီး သင်၏ ပထမဆုံး Account ကို ဖန်တီးပါ။",
+    # --- (!!!) End of New Texts (!!!) ---
+    # --- (!!!) NEW: Summary (Step 3) Texts (!!!) ---
+    "summary_account_header": "\n\n💰 **Account လက်ကျန်ငွေ စုစုပေါင်း**",
+    "summary_account_detail": "\n- **{name}**: {balance:,.0f} Ks",
+    "summary_account_total": "\n\n**စုစုပေါင်း (Accounts):** {total:,.0f} Ks",
+    "summary_unassigned_balance": "\n**Account မသတ်မှတ် (Unassigned):** {unassigned:,.0f} Ks",
+    "summary_grand_total": "\n\n**Grand Total (စုစုပေါင်း):** {grand_total:,.0f} Ks",
     # --- (!!!) End of New Texts (!!!) ---
 
     "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\nဤလုပ်ဆောင်ချက်သည် Premium အသုံးပြုသူများအတွက်သာ ဖြစ်ပါသည်။\n\nPremium Plan ဝယ်ယူရန် 'Premium Plan ယူရန်' ကို နှိပ်ပါ သို့မဟုတ် ၇ ရက် အစမ်းသုံးရန် 'Free Trial' ကို နှိပ်ပါ။",
@@ -1162,20 +1169,47 @@ class MyanmarFinanceBot:
         today = dt.datetime.now()
         start_of_month = today.replace(day=1, hour=0, minute=0, second=0)
 
+        # --- Part 1: Monthly Flow (ယခုလ ဝင်ငွေ/ထွက်ငွေ) ---
         transactions = self.data_manager.get_transactions(
             user_id, start_date=start_of_month)
+        
+        total_income = 0
+        total_expense = 0
+        
+        if transactions:
+            df = pd.DataFrame(transactions)
+            total_income = df[df['type'] == 'income']['amount'].sum()
+            total_expense = df[df['type'] == 'expense']['amount'].sum()
 
-        if not transactions:
+        month_str = format_myanmar_date(today)
+        response_text = f"{TEXTS['summary_current_month'].format(month=month_str)}\n{TEXTS['summary_details'].format(income=total_income, expense=total_expense, balance=(total_income - total_expense))}"
+
+        # --- Part 2: Account Balances (လက်ရှိ လက်ကျန်ငွေ စုစုပေါင်း) ---
+        accounts_with_balance = self.data_manager.get_accounts_with_balance(user_id)
+        unassigned_balance = self.data_manager.get_unassigned_balance(user_id)
+        
+        # User က data လုံးဝ မရှိရင် (Account လည်း မရှိ၊ Unassigned လည်း မရှိ၊ ဒီလ tx လည်း မရှိ)
+        if not accounts_with_balance and unassigned_balance == 0 and not transactions:
             await context.bot.send_message(user_id, TEXTS["no_data"])
             return
+        
+        # Account (သို့) Unassigned data ရှိမှသာ ဒီအပိုင်းကို ဆက်ပြပါ
+        if accounts_with_balance or unassigned_balance != 0:
+            response_text += TEXTS["summary_account_header"]
+            total_assigned_balance = 0
+            
+            for acc in accounts_with_balance:
+                response_text += TEXTS["summary_account_detail"].format(name=acc['name'], balance=acc['balance'])
+                total_assigned_balance += acc['balance']
 
-        df = pd.DataFrame(transactions)
-        total_income = df[df['type'] == 'income']['amount'].sum()
-        total_expense = df[df['type'] == 'expense']['amount'].sum()
-        balance = total_income - total_expense
-        month_str = format_myanmar_date(today)
-        response_text = f"{TEXTS['summary_current_month'].format(month=month_str)}\n{TEXTS['summary_details'].format(income=total_income, expense=total_expense, balance=balance)}"
-        await context.bot.send_message(user_id, response_text)
+            # Show totals
+            response_text += TEXTS["summary_account_total"].format(total=total_assigned_balance)
+            response_text += TEXTS["summary_unassigned_balance"].format(unassigned=unassigned_balance)
+            
+            grand_total = total_assigned_balance + unassigned_balance
+            response_text += TEXTS["summary_grand_total"].format(grand_total=grand_total)
+
+        await context.bot.send_message(user_id, response_text, parse_mode=ParseMode.MARKDOWN)
 
     # --- Reminder Menu Handler ---
     async def reminder_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

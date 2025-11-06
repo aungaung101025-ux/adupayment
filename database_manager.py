@@ -1,4 +1,4 @@
-# database_manager.py (UPDATED for Multi-Wallet)
+# database_manager.py (UPDATED for Multi-Wallet Step 3)
 import logging
 import uuid
 from contextlib import contextmanager
@@ -142,6 +142,24 @@ class DatabaseManager:
                 })
             return result
     # --- (!!!) End of New Account Functions (!!!) ---
+
+    # (!!!) --- NEW: Get Unassigned Balance (Step 3) --- (!!!)
+    def get_unassigned_balance(self, user_id: int) -> int:
+        """
+        Calculates the balance of all transactions not assigned to any account.
+        (User အဟောင်းတွေ သို့မဟုတ် "Unassigned" အဖြစ် သိမ်းထားတဲ့ စာရင်းတွေ)
+        """
+        with get_session() as session:
+            unassigned_income = session.query(func.sum(Transaction.amount)).filter_by(
+                user_id=user_id, type='income', account_id=None
+            ).scalar() or 0
+            
+            unassigned_expense = session.query(func.sum(Transaction.amount)).filter_by(
+                user_id=user_id, type='expense', account_id=None
+            ).scalar() or 0
+            
+            return int(unassigned_income - unassigned_expense)
+    # (!!!) --- End of New Function --- (!!!)
 
     # --- NEW: Get all user IDs for schedulers ---
     def get_all_users_for_reminders(self) -> List[Tuple[int, bool, str, bool]]:
