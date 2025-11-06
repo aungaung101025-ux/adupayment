@@ -19,7 +19,22 @@ import base64  # Needed for embedding charts in PDF
 
 # ----------------------- Config & Logging -----------------------
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
-EXPORT_DIR = 'exports'
+# --- (!!!) NEW: Persistent Disk for Bot State File (!!!) ---
+# Database က PostgreSQL မှာမို့၊ ဒီ Disk ကို 'bot_persistence' file အတွက်ပဲ သုံးပါမယ်။
+DATA_ROOT = os.getenv('DATA_DIR', '.') # Render က /app/data ကို ဖတ်ပါမယ်
+PERSISTENCE_FILE_PATH = os.path.join(DATA_ROOT, 'bot_persistence')
+EXPORT_DIR = os.path.join(DATA_ROOT, 'exports') # Export file တွေပါ ဒီထဲပဲ ထားပါ
+
+print(f"--- 💡 BOT STATE STORAGE INITIALIZED ---")
+print(f"Using DATA_ROOT (for persistence): {DATA_ROOT}")
+print(f"Persistence File Path: {PERSISTENCE_FILE_PATH}")
+# --- (!!!) End of New Config (!!!) ---
+
+# --- NEW: DatabaseManager ---
+# database_manager.py file ကို ခေါ်တဲ့ နေရာတွေမှာ DB_PATH ကို သုံးရပါမယ်။
+from database_manager import DatabaseManager
+
+# --- NEW FONT INSTALLER (Python Method) ---
 
 # --- NEW: DatabaseManager ---
 # -----------------------------------------------
@@ -817,9 +832,13 @@ class MyanmarFinanceBot:
         self.chart_manager = PlotlyChartManager()
         self.scheduler = AsyncIOScheduler()
 
-        # --- (!!!) သင့် ADMIN ID အစစ်ကို ဤနေရာတွင် တိုက်ရိုက်ထည့်ပါ (!!!) ---
-        self.ADMIN_ID = 7200049630  # <-- ဥပမာ: 123456789 (ဂဏန်းသက်သက်)
-
+        try:
+            # Render Environment ကနေ ADMIN_ID ကို ဖတ်ပါ
+            self.ADMIN_ID = int(os.getenv('ADMIN_ID')) 
+        except (TypeError, ValueError):
+            print("❌ CRITICAL: ADMIN_ID environment variable is not set or invalid.")
+            self.ADMIN_ID = 0 # Failsafe
+        
         self.application: Optional[Application] = None
 
     # --- Utility: Premium Check ---
@@ -3344,7 +3363,7 @@ class MyanmarFinanceBot:
             return
 
         # --- Persistence (State တွေ မှတ်ထားရန်) ---
-        persistence = PicklePersistence(filepath='bot_persistence')
+        persistence = PicklePersistence(filepath=PERSISTENCE_FILE_PATH)
 
         self.application = Application.builder().token(
             TELEGRAM_BOT_TOKEN).persistence(persistence).build()
