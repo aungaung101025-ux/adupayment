@@ -3401,7 +3401,7 @@ class MyanmarFinanceBot:
         """
         User ကို Account ရွေးခိုင်းတဲ့ ခလုတ်တွေ (Keyboard) ကို ပြပေးမယ့် Helper Function
         """
-        accounts = self.data_manager.get_accounts(user_id)
+        accounts = self.data_manager.get_accounts(user_id) # <-- (!!!) ဒါက အခု List[Dict] ဖြစ်သွားပါပြီ
         
         # Account မရှိသေးရင်၊ Account အရင် ဆောက်ခိုင်းပါ
         if not accounts:
@@ -3412,8 +3412,10 @@ class MyanmarFinanceBot:
         keyboard = []
         row = []
         for acc in accounts:
-            # Callback data မှာ account ID ကို ထည့်ပေးပါ
-            row.append(InlineKeyboardButton(f"💰 {acc.name}", callback_data=f'tx_select_account_{acc.id}'))
+            # (!!!) Object (acc.name) အစား၊ Dict Key (acc['name']) ကို သုံးပါ (!!!)
+            acc_name = acc['name']
+            acc_id = acc['id']
+            row.append(InlineKeyboardButton(f"💰 {acc_name}", callback_data=f'tx_select_account_{acc_id}'))
             if len(row) == 2: # တစ်တန်းမှာ ၂ ခု
                 keyboard.append(row)
                 row = []
@@ -3432,7 +3434,6 @@ class MyanmarFinanceBot:
         else:
             # This is a new message (from Normal Add), so send a new message
             await context.bot.send_message(user_id, prompt_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-
     # (!!!) --- End of New Helper Function --- (!!!)
 # --- (STEP 4) NEW: Admin Dashboard Handlers ---
 
