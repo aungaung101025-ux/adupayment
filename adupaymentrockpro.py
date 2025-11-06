@@ -413,7 +413,24 @@ TEXTS = {
     "feedback_success": "✅ သင်၏ အကြံပြုချက်ကို Admin ထံသို့ အောင်မြင်စွာ ပေးပို့လိုက်ပါပြီ။ ကျေးဇူးတင်ပါသည်။",
     "feedback_error": "❌ အမှားအယွင်းတစ်ခုကြောင့် Admin ထံ ပို့၍ မရသေးပါ။",
     # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
+    # ... (feedback_error Text ရဲ့ အောက်)
     
+    # --- (!!!) NEW: Multi-Wallet Account Texts (!!!) ---
+    "account_menu_header": "💰 **Account စီမံခန့်ခွဲခြင်း**\n\nသင်၏ ငွေစာရင်း Account များကို (ဥပမာ- Cash, KPay, Bank) ဤနေရာတွင် စီမံခန့်ခွဲနိုင်ပါသည်။",
+    "account_add_button": "➕ Account အသစ်ထည့်ရန်",
+    "account_view_button": "👀 Account များ ကြည့်ရန်",
+    "account_transfer_button": "🔁 ငွေလွှဲပြောင်းရန် (Transfer)",
+    "account_add_prompt": "🆕 **Account အသစ်ထည့်ရန်**\n\nAccount အမည်ကို ရိုက်ထည့်ပေးပါ။ (ဥပမာ- `Cash` သို့မဟုတ် `KPay`)\n\n(လက်ကျန်ငွေ ပါ ထည့်လိုပါက `[အမည်] [လက်ကျန်]` ဥပမာ- `Bank 100000`)\n\nပယ်ဖျက်လိုပါက `cancel` ဟု ရိုက်ထည့်ပါ။",
+    "account_add_success": "✅ '{name}' Account ကို {balance:,.0f} Ks လက်ကျန်ဖြင့် အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။",
+    "account_add_fail_exists": "❌ '{name}' အမည်ဖြင့် Account ရှိပြီးသားပါ။",
+    "account_list_header": "💰 **သင်၏ Account များ**\n",
+    "account_list_detail": "\n- **{name}**: {balance:,.0f} Ks",
+    "account_list_total": "\n\n**စုစုပေါင်း လက်ကျန် (Assigned):** {total:,.0f} Ks",
+    "account_list_unassigned": "\n**Account မခွဲရသေးသော လက်ကျန်:** {unassigned:,.0f} Ks",
+    "account_list_grand_total": "\n\n**Grand Total:** {total:,.0f} Ks",
+    "account_list_empty": "ℹ️ သင့်တွင် Account များ ဖန်တီးထားခြင်း မရှိသေးပါ။ 'Account အသစ်ထည့်ရန်' ခလုတ်ကို နှိပ်ပြီး သင်၏ ပထမဆုံး Account ကို ဖန်တီးပါ။",
+    # --- (!!!) End of New Texts (!!!) ---
+
     "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\nဤလုပ်ဆောင်ချက်သည် Premium အသုံးပြုသူများအတွက်သာ ဖြစ်ပါသည်။\n\nPremium Plan ဝယ်ယူရန် 'Premium Plan ယူရန်' ကို နှိပ်ပါ သို့မဟုတ် ၇ ရက် အစမ်းသုံးရန် 'Free Trial' ကို နှိပ်ပါ။",
 
 }
@@ -1596,20 +1613,49 @@ class MyanmarFinanceBot:
 
     # --- MAIN MESSAGE HANDLER (UPDATED for Step 6) ---
 
-    # --- MAIN MESSAGE HANDLER (UPDATED for Step 6) ---
-
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not update.message or not update.message.text:
             return
 
         text = update.message.text.strip()
         user_id = update.effective_user.id
-        user = update.effective_user # <-- (!!!) User ကိုပါ ယူထားလိုက်ပါ (!!!)
-
+        user = update.effective_user
         user_state = context.user_data
 
-        # --- (!!!) အောက်ပါ Code Block အသစ်ကို ထပ်ထည့်ပါ (!!!) ---
-        # --- Handle: Awaiting Feedback State ---
+        # --- (!!!) NEW: Handle Add Account State (!!!) ---
+        if user_state.get('mode') == 'add_account':
+            if text.lower() == 'cancel':
+                await update.message.reply_text("❌ Account ထည့်သွင်းခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။")
+                context.user_data.clear()
+                # await self.account_menu(update, context) # Go back to account menu
+                return
+
+            parts = text.split(maxsplit=1)
+            account_name = parts[0].strip()
+            initial_balance = 0
+            
+            if len(parts) > 1:
+                try:
+                    # User က "Bank 100,000" လို့ ရိုက်တာကို ခွဲထုတ်ပါ
+                    initial_balance = int(parts[1].replace(',', '').replace('.', ''))
+                except ValueError:
+                    await update.message.reply_text("❌ ပမာဏ မမှန်ကန်ပါ။ ဥပမာ- `Bank 100000`")
+                    return
+
+            # DB Manager ကို ခေါ်သုံးပါ
+            account, message = self.data_manager.add_account(user_id, account_name, initial_balance)
+            
+            await update.message.reply_text(message) # Show success or fail message
+            
+            if account: # If successful
+                context.user_data.clear()
+                # Account menu ကို ပြန်ခေါ်ပေးပါ
+                await self.account_menu(update, context) 
+            
+            return
+        # --- (!!!) End of New State (!!!) ---
+
+        # --- Handle: Awaiting Feedback State (Corrected - ONE TIME ONLY) ---
         if user_state.get('mode') == 'awaiting_feedback':
             if text.lower() == 'cancel':
                 await update.message.reply_text(TEXTS["feedback_cancel"])
@@ -1641,8 +1687,11 @@ class MyanmarFinanceBot:
             # State ကို ရှင်းလင်းပါ
             context.user_data.clear()
             return
-        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
+        # --- (!!!) End of Feedback State (!!!) ---
 
+
+        # --- (STEP 5) Quick Add Number Check ---
+        # ... (ကျန်တဲ့ code တွေ ဒီအတိုင်း ဆက်ထားပါ)
 
         # --- (STEP 5) Quick Add Number Check ---
         quick_add_match = re.match(r'^\d+$', text)
@@ -1984,33 +2033,24 @@ class MyanmarFinanceBot:
 
         state = context.user_data
 
-        # (!!!) အမှားပြင်ဆင်ချက်- ပထမဆုံး check ဖြစ်တဲ့အတွက် 'elif' မဟုတ်ဘဲ 'if' ကို သုံးပါ (!!!)
+        # (!!!) This is correct (!!!)
         if data.startswith('info_'):
-            # data က 'info_custom_category' ဖြစ်ပါစေ၊ 'info_goal_tracking' ဖြစ်ပါစေ၊
-            # အဲ့ဒီ data ကို key အဖြစ် တိုက်ရိုက် သုံးပါမယ်။
-            text_key = f"{data}_text" # ဥပမာ- "info_custom_category_text"
-
-            info_text = TEXTS.get(text_key) # TEXTS dict ထဲက ရှင်းပြချက်ကို ရှာပါ
-
-            if not info_text:
-                # အကယ်၍ TEXTS ထဲမှာ ရှင်းပြချက် ထည့်ဖို့ မေ့ကျန်ခဲ့ရင်
-                info_text = "ℹ️ ဤ feature အတွက် ရှင်းပြချက် မရှိသေးပါ။"
-
-            try:
-                # User နှိပ်လိုက်တဲ့အခါ Pop-up message အနေနဲ့ ရှင်းပြချက်ကို ပြပါ
-                await query.answer(
-                    info_text,
-                    show_alert=True, # Pop-up box အနေနဲ့ ပြပါ
-                    cache_time=30    # 30 seconds အတွင်း ထပ်နှိပ်ရင် bot ကို ထပ်မမေးဘဲ ပြပါ
-                )
-            except Exception as e:
-                logger.error(f"Failed to send info alert: {e}")
+            # ... (info logic) ...
             return # Message ကို edit လုပ်စရာမလိုလို့ ဒီမှာတင် ရပ်လိုက်ပါ
         
-        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) 
+        # --- (!!!) NEW: Account Callbacks (Corrected 'if' to 'elif') (!!!) ---
+        elif data == 'account_menu':
+            await self.account_menu(update, context)
+            return
+        elif data == 'account_view':
+            await self.account_view_balances(update, context)
+            return
+        elif data == 'account_add_start':
+            await self.account_add_prompt(update, context)
+            return
+        # --- (!!!) End of New Callbacks (!!!) ---
 
-        # --- (STEP 6) NEW: Backup/Restore Callbacks ---
-        # (!!!) အခု 'if' ရှိသွားပြီမို့၊ ဒီနေရာမှာ 'elif' ကို ဆက်သုံးလို့ ရပါပြီ (!!!)
+        # --- (STEP 6) NEW: Backup/Restore Callbacks (Corrected - ONE TIME ONLY) ---
         elif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
                 return
@@ -2027,8 +2067,10 @@ class MyanmarFinanceBot:
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
             return
+        # --- (!!!) End of Duplicate block (!!!) ---
 
         elif data == 'backup_start':
+            # ... (ကျန်တဲ့ code တွေ ဒီအတိုင်း ဆက်ထားပါ)
             if not await self.check_premium(user_id, context):
                 return
             
@@ -3140,12 +3182,20 @@ class MyanmarFinanceBot:
             'is_premium']
 
         keyboard = []
+        
+        # --- (!!!) NEW: Account Management Button (!!!) ---
+        # Multi-Wallet feature ကို အပေါ်ဆုံးမှာ ထားပါ
+        keyboard.append([
+            InlineKeyboardButton("💰 Account စီမံခန့်ခွဲ", callback_data='account_menu')
+        ])
+        # --- (!!!) End of New (!!!) ---
 
         if is_premium:
             keyboard.append([
                 InlineKeyboardButton(TEXTS["backup_restore_button"], callback_data='backup_restore_menu'),
-                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_backup_restore') # <-- ထည့်ရန်
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_backup_restore')
             ])
+        # ... (ကျန်တဲ့ code တွေ ဒီအတိုင်း ဆက်ထားပါ)
             keyboard.append([
                 InlineKeyboardButton("🔁 လစဉ် ထပ်တလဲလဲ (Recurring)", callback_data='recurring_tx_menu'),
                 InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_recurring_tx') # <-- ထည့်ရန်
@@ -3195,6 +3245,62 @@ class MyanmarFinanceBot:
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
+    # (!!!) --- NEW: Account Management Bot Functions --- (!!!)
+    
+    async def account_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Displays the main account management menu."""
+        keyboard = [
+            [InlineKeyboardButton(TEXTS["account_view_button"], callback_data='account_view')],
+            [InlineKeyboardButton(TEXTS["account_add_button"], callback_data='account_add_start')],
+            # [InlineKeyboardButton(TEXTS["account_transfer_button"], callback_data='account_transfer_start')] # <-- ဒါကို နောက် အဆင့်မှ ထည့်ပါမယ်
+            [InlineKeyboardButton("↩️ စီမံခန့်ခွဲ မီနူးသို့", callback_data='manage_tx_menu_back')]
+        ]
+        
+        message_text = TEXTS["account_menu_header"]
+        
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            await context.bot.send_message(update.effective_user.id, message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard))
+
+    async def account_view_balances(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Shows a list of all accounts and their balances."""
+        user_id = update.effective_user.id
+        
+        if update.callback_query:
+            await update.callback_query.answer("💰 လက်ကျန်ငွေများ စစ်ဆေးနေပါသည်...")
+
+        accounts_with_balance = self.data_manager.get_accounts_with_balance(user_id)
+        
+        if not accounts_with_balance:
+            message_text = TEXTS["account_list_empty"]
+        else:
+            message_text = TEXTS["account_list_header"]
+            total_balance = 0
+            
+            for acc in accounts_with_balance:
+                message_text += TEXTS["account_list_detail"].format(name=acc['name'], balance=acc['balance'])
+                total_balance += acc['balance']
+            
+            message_text += TEXTS["account_list_total"].format(total=total_balance)
+
+        keyboard = [
+            [InlineKeyboardButton(TEXTS["account_add_button"], callback_data='account_add_start')],
+            [InlineKeyboardButton("↩️ Account မီနူးသို့", callback_data='account_menu')]
+        ]
+
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            await context.bot.send_message(user_id, message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard))
+
+    async def account_add_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Sets the state to wait for new account name and balance."""
+        context.user_data['mode'] = 'add_account'
+        await update.callback_query.edit_message_text(TEXTS["account_add_prompt"], parse_mode=ParseMode.MARKDOWN)
+
+    # (!!!) --- End of New Account Functions --- (!!!)
+    
 # --- (STEP 4) NEW: Admin Dashboard Handlers ---
 
     async def admin_dashboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

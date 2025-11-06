@@ -1,4 +1,4 @@
-# models.py (FIXED VERSION)
+# models.py (FIXED VERSION with Multi-Wallet)
 import os
 import sys
 import logging
@@ -70,6 +70,36 @@ class User(Base):
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
     custom_categories = relationship("CustomCategory", back_populates="user", cascade="all, delete-orphan")
     recurring_txs = relationship("RecurringTx", back_populates="user", cascade="all, delete-orphan")
+    
+    # --- (!!!) NEW Relationships for Multi-Wallet (!!!) ---
+    accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
+    transfers = relationship("TransferLog", back_populates="user", cascade="all, delete-orphan")
+    # --- (!!!) End of New (!!!) ---
+
+# --- (!!!) NEW Table: Account (!!!) ---
+class Account(Base, BaseMixin):
+    """
+    User's financial accounts (e.g., Cash, KBZPay, Bank)
+    """
+    __tablename__ = 'account'
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String, nullable=False)
+    initial_balance = Column(Integer, default=0, nullable=False) # အကောင့် စဖွင့်ကတည်းက လက်ကျန်ငွေ
+    
+    user_id = Column(BigInteger, ForeignKey('user.id'), nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="accounts")
+    transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
+    
+    # Transfers
+    transfers_out = relationship("TransferLog", foreign_keys="[TransferLog.from_account_id]", back_populates="from_account", cascade="all, delete-orphan")
+    transfers_in = relationship("TransferLog", foreign_keys="[TransferLog.to_account_id]", back_populates="to_account", cascade="all, delete-orphan")
+
+    __table_args__ = (UniqueConstraint('user_id', 'name', name='_user_account_name_uc'),)
+# --- (!!!) End of New Table (!!!) ---
+
 
 class Transaction(Base, BaseMixin):
     """ User's Transaction """
@@ -82,9 +112,14 @@ class Transaction(Base, BaseMixin):
     description = Column(String)
     category = Column(String)
     
-    # 💡 FIX 1: Integer -> BigInteger
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="transactions")
+    
+    # --- (!!!) NEW Relationship for Multi-Wallet (!!!) ---
+    # Data အဟောင်းတွေအတွက် nullable=True (ကွက်လပ်ထားခွင့်ပြု) ထားပါ
+    account_id = Column(String, ForeignKey('account.id'), nullable=True) 
+    account = relationship("Account", back_populates="transactions")
+    # --- (!!!) End of New (!!!) ---
 
 class Budget(Base):
     """ User's Budget """
@@ -94,7 +129,6 @@ class Budget(Base):
     category = Column(String)
     amount = Column(Integer)
     
-    # 💡 FIX 2: Integer -> BigInteger
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="budgets")
     
@@ -110,7 +144,6 @@ class Goal(Base, BaseMixin):
     target_date = Column(DateTime)
     start_date = Column(DateTime, default=datetime.now)
     
-    # 💡 FIX 3: Integer -> BigInteger
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="goals")
 
@@ -122,7 +155,6 @@ class CustomCategory(Base):
     type = Column(String(10)) # 'income' or 'expense'
     name = Column(String)
     
-    # 💡 FIX 4: Integer -> BigInteger
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="custom_categories")
 
@@ -137,9 +169,31 @@ class RecurringTx(Base, BaseMixin):
     category = Column(String)
     day = Column(Integer) # Day of month (1-28)
     
-    # 💡 FIX 5: Integer -> BigInteger
     user_id = Column(BigInteger, ForeignKey('user.id'))
     user = relationship("User", back_populates="recurring_txs")
+
+# --- (!!!) NEW Table: TransferLog (!!!) ---
+class TransferLog(Base, BaseMixin):
+    """
+    Records transfers between a user's accounts
+    """
+    __tablename__ = 'transfer_log'
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    date = Column(DateTime, default=datetime.now)
+    amount = Column(Integer, nullable=False)
+    description = Column(String, nullable=True)
+    
+    user_id = Column(BigInteger, ForeignKey('user.id'), nullable=False)
+    from_account_id = Column(String, ForeignKey('account.id'), nullable=False)
+    to_account_id = Column(String, ForeignKey('account.id'), nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="transfers")
+    from_account = relationship("Account", foreign_keys=[from_account_id], back_populates="transfers_out")
+    to_account = relationship("Account", foreign_keys=[to_account_id], back_populates="transfers_in")
+# --- (!!!) End of New Table (!!!) ---
+
 
 # --- Initial Setup Function ---
 def setup_database():

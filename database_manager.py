@@ -1,4 +1,4 @@
-# database_manager.py
+# database_manager.py (UPDATED for Multi-Wallet)
 import logging
 import uuid
 from contextlib import contextmanager
@@ -10,7 +10,8 @@ from sqlalchemy.orm import sessionmaker, Session, joinedload
 from sqlalchemy import func
 
 # Import models and SessionLocal from models.py
-from models import User, Transaction, Budget, Goal, CustomCategory, RecurringTx, SessionLocal, setup_database
+# (!!!) Account, TransferLog ကို ထပ်တိုးပါ (!!!)
+from models import User, Transaction, Budget, Goal, CustomCategory, RecurringTx, SessionLocal, setup_database, Account, TransferLog
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,6 +59,86 @@ class DatabaseManager:
             session.add(user)
             session.commit() # Commit immediately so user exists
         return user
+
+    # --- (!!!) NEW: Account Management Functions (!!!) ---
+    def add_account(self, user_id: int, name: str, initial_balance: int = 0) -> Tuple[Optional[Account], str]:
+        """Creates a new account for the user."""
+        with get_session() as session:
+            user = self.get_or_create_user(session, user_id)
+            
+            # Check if account with same name already exists
+            existing = session.query(Account).filter_by(user_id=user_id, name=name).first()
+            if existing:
+                return None, f"❌ '{name}' အမည်ဖြင့် Account ရှိပြီးသားပါ။"
+                
+            new_account = Account(
+                name=name,
+                initial_balance=initial_balance,
+                user_id=user_id
+            )
+            session.add(new_account)
+            session.flush() # ID ကို ချက်ချင်း ရယူရန်
+            
+            # If initial balance is set, add an "Opening Balance" transaction
+            if initial_balance != 0:
+                tx_type = 'income' if initial_balance > 0 else 'expense'
+                new_tx = Transaction(
+                    id=str(uuid.uuid4()),
+                    date=datetime.now(),
+                    type=tx_type,
+                    amount=abs(initial_balance),
+                    description="Opening Balance",
+                    category="Initial Balance",
+                    user_id=user_id,
+                    account_id=new_account.id # Account အသစ်နဲ့ ချိတ်ဆက်ပါ
+                )
+                session.add(new_tx)
+            
+            logger.info(f"User {user_id} created new account '{name}' with balance {initial_balance}")
+            return new_account, "✅ Account အသစ်ကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။"
+
+    def get_account_by_name(self, session: Session, user_id: int, name: str) -> Optional[Account]:
+        """Helper to find an account by name."""
+        return session.query(Account).filter_by(user_id=user_id, name=name).first()
+
+    def get_accounts(self, user_id: int) -> List[Account]:
+        """Gets all accounts for a user."""
+        with get_session() as session:
+            return session.query(Account).filter_by(user_id=user_id).order_by(Account.name).all()
+
+    def calculate_account_balance(self, session: Session, account_id: str) -> int:
+        """Calculates the current balance for a single account."""
+        
+        # 1. Initial Balance
+        account = session.query(Account).filter_by(id=account_id).first()
+        if not account:
+            return 0
+        balance = account.initial_balance
+        
+        # 2. Income/Expense Transactions
+        incomes = session.query(func.sum(Transaction.amount)).filter_by(account_id=account_id, type='income').scalar() or 0
+        expenses = session.query(func.sum(Transaction.amount)).filter_by(account_id=account_id, type='expense').scalar() or 0
+        
+        # 3. Transfers In/Out
+        transfers_in = session.query(func.sum(TransferLog.amount)).filter_by(to_account_id=account_id).scalar() or 0
+        transfers_out = session.query(func.sum(TransferLog.amount)).filter_by(from_account_id=account_id).scalar() or 0
+        
+        balance = balance + incomes - expenses + transfers_in - transfers_out
+        return int(balance) # Ensure it returns integer
+
+    def get_accounts_with_balance(self, user_id: int) -> List[Dict[str, Any]]:
+        """Gets all accounts and their calculated balances."""
+        with get_session() as session:
+            accounts = session.query(Account).filter_by(user_id=user_id).order_by(Account.name).all()
+            result = []
+            for acc in accounts:
+                result.append({
+                    "id": acc.id,
+                    "name": acc.name,
+                    "balance": self.calculate_account_balance(session, acc.id)
+                })
+            return result
+    # --- (!!!) End of New Account Functions (!!!) ---
 
     # --- NEW: Get all user IDs for schedulers ---
     def get_all_users_for_reminders(self) -> List[Tuple[int, bool, str, bool]]:
@@ -188,10 +269,15 @@ class DatabaseManager:
         with get_session() as session:
             goals = session.query(Goal).filter_by(user_id=user_id).all()
             
-            # Calculate current balance
-            total_income = session.query(func.sum(Transaction.amount)).filter_by(user_id=user_id, type='income').scalar() or 0
-            total_expense = session.query(func.sum(Transaction.amount)).filter_by(user_id=user_id, type='expense').scalar() or 0
-            current_balance = total_income - total_expense
+            # (!!!) Calculate current balance (NEW LOGIC) (!!!)
+            # လက်ကျန်ငွေဆိုတာ Account အားလုံးထဲက စုစုပေါင်း ပိုက်ဆံ ဖြစ်ရပါမယ်
+            all_accounts = self.get_accounts_with_balance(user_id)
+            current_balance = sum(acc['balance'] for acc in all_accounts)
+            
+            # (!!!) Account မရှိသေးတဲ့ User အဟောင်းတွေအတွက်၊ Transaction အဟောင်းတွေကိုလည်း ထည့်တွက်ပါ (!!!)
+            unassigned_income = session.query(func.sum(Transaction.amount)).filter_by(user_id=user_id, type='income', account_id=None).scalar() or 0
+            unassigned_expense = session.query(func.sum(Transaction.amount)).filter_by(user_id=user_id, type='expense', account_id=None).scalar() or 0
+            current_balance += (unassigned_income - unassigned_expense)
             
             progress_list = []
             for goal in goals:
@@ -214,9 +300,13 @@ class DatabaseManager:
             return progress_list
 
     # --- Transaction Management Methods ---
-    def add_transaction(self, user_id: int, type: str, amount: int, description: str, category: str):
+    
+    # (!!!) MODIFIED: add_transaction (!!!)
+    def add_transaction(self, user_id: int, type: str, amount: int, description: str, category: str, account_id: Optional[str] = None):
         with get_session() as session:
             user = self.get_or_create_user(session, user_id)
+            
+            # (!!!) Account ID ကိုပါ ထည့်သွင်းပါ (!!!)
             new_tx = Transaction(
                 id=str(uuid.uuid4()),
                 date=datetime.now(),
@@ -224,10 +314,37 @@ class DatabaseManager:
                 amount=amount,
                 description=description,
                 category=category,
-                user_id=user_id
+                user_id=user_id,
+                account_id=account_id # <-- (!!!) ဒီလိုင်း အသစ် ထပ်တိုးပါ (!!!)
             )
             session.add(new_tx)
+
+    # --- (!!!) NEW: Transfer Function (!!!) ---
+    def add_transfer(self, user_id: int, from_account_id: str, to_account_id: str, amount: int, description: str) -> bool:
+        """Logs a transfer between two accounts."""
+        with get_session() as session:
+            user = self.get_or_create_user(session, user_id)
             
+            # Check if accounts exist
+            from_acc = session.query(Account).filter_by(id=from_account_id, user_id=user_id).first()
+            to_acc = session.query(Account).filter_by(id=to_account_id, user_id=user_id).first()
+            
+            if not from_acc or not to_acc:
+                logger.warning(f"Transfer failed: Account not found for user {user_id}")
+                return False
+                
+            new_transfer = TransferLog(
+                user_id=user_id,
+                from_account_id=from_account_id,
+                to_account_id=to_account_id,
+                amount=amount,
+                description=description
+            )
+            session.add(new_transfer)
+            logger.info(f"User {user_id} transferred {amount} from {from_acc.name} to {to_acc.name}")
+            return True
+    # --- (!!!) End of New Transfer Function (!!!) ---
+
     def get_transaction_by_id(self, user_id: int, tx_id: str) -> Optional[Dict[str, Any]]:
         with get_session() as session:
             tx = session.query(Transaction).filter_by(user_id=user_id, id=tx_id).first()
@@ -254,6 +371,7 @@ class DatabaseManager:
                 tx.amount = new_amount
                 tx.description = new_description
                 tx.category = new_category
+                # Note: This doesn't update the account_id. We'd need more logic in the bot to handle that.
                 return tx.to_dict()
             return None
         
@@ -470,6 +588,7 @@ class DatabaseManager:
         except (ValueError, TypeError):
             return None
 
+    # (!!!) MODIFIED: get_all_data_for_backup (!!!)
     def get_all_data_for_backup(self, user_id: int) -> Dict[str, List[Dict]]:
         """Fetches all user data for creating a backup JSON file."""
         with get_session() as session:
@@ -477,6 +596,10 @@ class DatabaseManager:
             transactions = [tx.to_dict() for tx in session.query(Transaction).filter_by(user_id=user_id).all()]
             goals = [g.to_dict() for g in session.query(Goal).filter_by(user_id=user_id).all()]
             recurring_txs = [r.to_dict() for r in session.query(RecurringTx).filter_by(user_id=user_id).all()]
+            
+            # (!!!) NEW (!!!)
+            accounts = [a.to_dict() for a in session.query(Account).filter_by(user_id=user_id).all()]
+            transfers = [t.to_dict() for t in session.query(TransferLog).filter_by(user_id=user_id).all()]
             
             # ဒီ model တွေမှာ .to_dict() helper မရှိလို့၊ manual လုပ်ပါ
             budgets_query = session.query(Budget).filter_by(user_id=user_id).all()
@@ -490,9 +613,12 @@ class DatabaseManager:
                 "budgets": budgets,
                 "goals": goals,
                 "custom_categories": custom_categories,
-                "recurring_txs": recurring_txs
+                "recurring_txs": recurring_txs,
+                "accounts": accounts, # (!!!) NEW (!!!)
+                "transfers": transfers # (!!!) NEW (!!!)
             }
 
+    # (!!!) MODIFIED: restore_data_from_backup (!!!)
     def restore_data_from_backup(self, user_id: int, backup_data: Dict[str, List[Dict]]) -> bool:
         """
         Restores user data from a backup dict.
@@ -500,7 +626,9 @@ class DatabaseManager:
         """
         with get_session() as session:
             # 1. --- (အရေးကြီး) Data အဟောင်းအားလုံးကို အရင်ဖျက်ပါ ---
+            session.query(TransferLog).filter_by(user_id=user_id).delete() # (!!!) NEW (!!!)
             session.query(Transaction).filter_by(user_id=user_id).delete()
+            session.query(Account).filter_by(user_id=user_id).delete() # (!!!) NEW (!!!)
             session.query(Budget).filter_by(user_id=user_id).delete()
             session.query(Goal).filter_by(user_id=user_id).delete()
             session.query(CustomCategory).filter_by(user_id=user_id).delete()
@@ -510,8 +638,26 @@ class DatabaseManager:
 
             # 2. --- Data အသစ်များ ပြန်ထည့်ပါ ---
             try:
+                # (!!!) NEW: Accounts (Transactions တွေ မထည့်ခင် Account တွေ အရင်ထည့်ပါ)
+                account_id_map = {} # Backup file ထဲက ID အဟောင်းနဲ့ DB ထဲက ID အသစ်ကို ချိတ်ဆက်ရန်
+                for acc in backup_data.get("accounts", []):
+                    old_id = acc.get('id')
+                    new_acc = Account(
+                        # id=old_id, # ID အဟောင်းကို မသုံးတော့ပါ၊ UUID အသစ် သုံးပါမယ်
+                        name=acc.get('name'),
+                        initial_balance=acc.get('initial_balance', 0), # Default to 0
+                        user_id=user_id
+                    )
+                    session.add(new_acc)
+                    session.flush() # ID အသစ်ကို ရယူရန်
+                    if old_id:
+                        account_id_map[old_id] = new_acc.id # ID အဟောင်း-အသစ်ကို မှတ်ထားပါ
+                
                 # Transactions
                 for tx in backup_data.get("transactions", []):
+                    old_account_id = tx.get('account_id')
+                    new_account_id = account_id_map.get(old_account_id) # ID အသစ်ကို ရှာပါ
+                    
                     new_tx = Transaction(
                         id=tx.get('id', str(uuid.uuid4())), # id အဟောင်းကို သုံးပါ
                         date=self._parse_iso_date_helper(tx.get('date')),
@@ -519,7 +665,8 @@ class DatabaseManager:
                         amount=tx.get('amount'),
                         description=tx.get('description'),
                         category=tx.get('category'),
-                        user_id=user_id
+                        user_id=user_id,
+                        account_id=new_account_id # (!!!) Account ID အသစ်ကို ထည့်ပါ (!!!)
                     )
                     session.add(new_tx)
                 
@@ -558,6 +705,26 @@ class DatabaseManager:
                     )
                     session.add(new_r)
                 
+                # (!!!) NEW: Transfers
+                for t in backup_data.get("transfers", []):
+                    old_from_id = t.get('from_account_id')
+                    old_to_id = t.get('to_account_id')
+                    
+                    new_from_id = account_id_map.get(old_from_id)
+                    new_to_id = account_id_map.get(old_to_id)
+                    
+                    if new_from_id and new_to_id: # Account ID တွေ မှန်မှ ထည့်ပါ
+                        new_t = TransferLog(
+                            id=t.get('id', str(uuid.uuid4())),
+                            date=self._parse_iso_date_helper(t.get('date')),
+                            amount=t.get('amount'),
+                            description=t.get('description'),
+                            user_id=user_id,
+                            from_account_id=new_from_id,
+                            to_account_id=new_to_id
+                        )
+                        session.add(new_t)
+
                 logger.info(f"User {user_id}: Successfully restored data from backup.")
                 return True
                 
