@@ -423,6 +423,15 @@ TEXTS = {
     "account_add_prompt": "🆕 **Account အသစ်ထည့်ရန်**\n\nAccount အမည်ကို ရိုက်ထည့်ပေးပါ။ (ဥပမာ- `Cash` သို့မဟုတ် `KPay`)\n\n(လက်ကျန်ငွေ ပါ ထည့်လိုပါက `[အမည်] [လက်ကျန်]` ဥပမာ- `Bank 100000`)\n\nပယ်ဖျက်လိုပါက `cancel` ဟု ရိုက်ထည့်ပါ။",
     "account_add_success": "✅ '{name}' Account ကို {balance:,.0f} Ks လက်ကျန်ဖြင့် အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။",
     "account_add_fail_exists": "❌ '{name}' အမည်ဖြင့် Account ရှိပြီးသားပါ။",
+    # --- (!!!) NEW: Step 2 Account Texts (!!!) ---
+    "select_account_prompt": "👇 **{tx_type} {amount:,.0f} Ks** ({desc}) ကို ဘယ် Account ထဲမှာ မှတ်တမ်းတင်မလဲ ရွေးချယ်ပေးပါ။",
+    "select_account_button_none": "🔘 Account မသတ်မှတ် (Unassigned)",
+    "data_saved_with_account": "✅ {category} အတွက် {amount:,.0f} Ks ကို **{account_name}** Account ထဲတွင် မှတ်တမ်းတင်လိုက်ပါပြီ။",
+    "data_saved_no_account": "✅ {category} အတွက် {amount:,.0f} Ks ကို (Account မသတ်မှတ်) ဖြင့် မှတ်တမ်းတင်လိုက်ပါပြီ။",
+    "no_accounts_error": "❌ သင့်တွင် Account မရှိသေးပါ။\n\nကျေးဇူးပြု၍ '⚙️ စီမံခန့်ခွဲ' -> '💰 Account စီမံခန့်ခွဲ' တွင် Account အနည်းဆုံး တစ်ခု အရင် ဖန်တီးပါ။ Account မဖန်တီးဘဲ သုံးစွဲ၍ မရတော့ပါ။",
+    "tx_edit_prompt_account": "✏️ **Account ပြောင်းလဲရန်**\n\n`{desc}` ({amount:,.0f} Ks) အတွက် လက်ရှိ Account ({current_account}) မှ အောက်ပါ Account သို့ ပြောင်းလဲမည်-",
+    "tx_edit_account_success": "✅ မှတ်တမ်း၏ Account ကို **{account_name}** သို့ ပြောင်းလဲလိုက်ပါပြီ။",
+    # --- (!!!) End of New Texts (!!!) ---
     "account_list_header": "💰 **သင်၏ Account များ**\n",
     "account_list_detail": "\n- **{name}**: {balance:,.0f} Ks",
     "account_list_total": "\n\n**စုစုပေါင်း လက်ကျန် (Assigned):** {total:,.0f} Ks",
@@ -1825,7 +1834,7 @@ class MyanmarFinanceBot:
             await self.privacy(update, context)
             return
 
-        # 7. --- Handle Transaction/Budget Input ---
+        # 7. --- Handle Transaction/Budget Input (MODIFIED FOR STEP 2) ---
         parts = text.split(maxsplit=2)
         command = parts[0].lower()
 
@@ -1833,7 +1842,8 @@ class MyanmarFinanceBot:
             if len(parts) != 3:
                 await update.message.reply_text(TEXTS["invalid_format"])
                 return
-            type = 'income' if command in ["ဝင်ငွေ", "income"] else 'expense'
+            
+            tx_type = 'income' if command in ["ဝင်ငွေ", "income"] else 'expense'
             try:
                 amount = int(parts[1].replace(',', '').replace('.', ''))
             except ValueError:
@@ -1842,47 +1852,31 @@ class MyanmarFinanceBot:
             description = parts[2].strip()
 
             all_categories = self.data_manager.get_all_categories(
-                user_id, type, TEXTS[f"{type}_categories"])
+                user_id, tx_type, TEXTS[f"{tx_type}_categories"])
             category = next(
                 (c for c in all_categories if c in description), all_categories[-1])
 
-            self.data_manager.add_transaction(
-                user_id, type, amount, description, category)
-            await update.message.reply_text(TEXTS["data_saved"].format(category=category, amount=amount))
+            # --- (!!!) NEW LOGIC (!!!) ---
+            # Data ကို တိုက်ရိုက် မသိမ်းတော့ဘဲ၊ User State ထဲမှာ ခဏ သိမ်းပါ
+            context.user_data.clear() # State အဟောင်း ရှင်းပါ
+            context.user_data['mode'] = 'awaiting_account_selection'
+            context.user_data['tx_data'] = {
+                'type': tx_type,
+                'amount': amount,
+                'description': description,
+                'category': category
+            }
+            
+            # User ကို Account ရွေးခိုင်းမယ့် Helper Function ကို ခေါ်ပါ
+            prompt_text = TEXTS["select_account_prompt"].format(
+                tx_type=command, 
+                amount=amount, 
+                desc=description
+            )
+            await self.prompt_account_selection(update.message, context, user_id, prompt_text)
+            # --- (!!!) End of New Logic (!!!) ---
 
-            # --- Real-time Budget Alert Check ---
-            if type == 'expense' and self.data_manager.get_premium_status(user_id)['is_premium']:
-                budgets = self.data_manager.get_budgets(user_id)
-                if category in budgets:
-                    current_tx = {'type': type, 'amount': amount,
-                                  'description': description, 'category': category}
-                    _, _, alert_needed = self.calculate_budget_status(
-                        user_id, current_tx=current_tx)
-
-                    if alert_needed:
-                        budgeted_amount = budgets[category]
-                        today = dt.datetime.now()
-                        start_of_month = today.replace(
-                            day=1, hour=0, minute=0, second=0)
-                        transactions = self.data_manager.get_transactions(
-                            user_id, start_date=start_of_month)
-                        expense_df = pd.DataFrame(
-                            [tx for tx in transactions if tx['type'] == 'expense'])
-                        spent = expense_df[expense_df['category']
-                                           == category]['amount'].sum()
-                        remaining = budgeted_amount - spent
-                        percent_spent = (spent / budgeted_amount) * 100
-
-                        alert_message = TEXTS["budget_alert_overrun"].format(
-                            category=category,
-                            budget=budgeted_amount,
-                            percent=percent_spent,
-                            spent=spent,
-                            remaining=remaining
-                        )
-                        await context.bot.send_message(user_id, alert_message, parse_mode=ParseMode.MARKDOWN)
-
-            return
+            return # Function ကို ဒီမှာတင် ရပ်လိုက်ပါ
 
         elif command in ["ဘတ်ဂျက်", "budget"]:
             if not self.data_manager.get_premium_status(user_id)['is_premium']:
@@ -2049,7 +2043,60 @@ class MyanmarFinanceBot:
             await self.account_add_prompt(update, context)
             return
         # --- (!!!) End of New Callbacks (!!!) ---
+        # --- (!!!) NEW: Handle Account Selection for Transaction (!!!) ---
+        elif data.startswith('tx_select_account_') and state.get('mode') == 'awaiting_account_selection':
+            tx_data = state.get('tx_data')
+            
+            if not tx_data:
+                await query.edit_message_text("❌ အချိန် ကျော်လွန်သွားပါသဖြင့်၊ ကျေးဇူးပြု၍ ငွေစာရင်းကို အစမှ ပြန်ထည့်ပါ။")
+                context.user_data.clear()
+                return
 
+            account_id = data.replace('tx_select_account_', '')
+            
+            if account_id == 'none':
+                # User က "Account မသတ်မှတ်" ကို ရွေးသည်
+                self.data_manager.add_transaction(
+                    user_id=user_id,
+                    type=tx_data['type'],
+                    amount=tx_data['amount'],
+                    description=tx_data['description'],
+                    category=tx_data['category'],
+                    account_id=None # <-- Account ID = None
+                )
+                await query.edit_message_text(TEXTS["data_saved_no_account"].format(
+                    category=tx_data['category'], amount=tx_data['amount']
+                ))
+            
+            else:
+                # User က Account တစ်ခုခုကို ရွေးသည်
+                self.data_manager.add_transaction(
+                    user_id=user_id,
+                    type=tx_data['type'],
+                    amount=tx_data['amount'],
+                    description=tx_data['description'],
+                    category=tx_data['category'],
+                    account_id=account_id # <-- Account ID အစစ်
+                )
+                
+                # Account နာမည်ကို ပြန်ရှာပြီး user ကို ပြပါ
+                account = next((acc for acc in self.data_manager.get_accounts(user_id) if acc.id == account_id), None)
+                account_name = account.name if account else "Unknown"
+                
+                await query.edit_message_text(TEXTS["data_saved_with_account"].format(
+                    category=tx_data['category'], 
+                    amount=tx_data['amount'], 
+                    account_name=account_name
+                ))
+
+            context.user_data.clear() # State ကို ရှင်းပါ
+            
+            # --- (!!!) Real-time Budget Alert Check (ဒီနေရာကို ရွှေ့ပါ) (!!!) ---
+            if tx_data['type'] == 'expense' and self.data_manager.get_premium_status(user_id)['is_premium']:
+                await self.check_budget_alert(user_id, tx_data['category'], tx_data['amount'], context)
+            
+            return
+        # --- (!!!) End of New Transaction Callback (!!!) ---
         # --- (STEP 6) NEW: Backup/Restore Callbacks (Corrected - ONE TIME ONLY) ---
         elif data == 'backup_restore_menu':
             if not await self.check_premium(user_id, context):
@@ -2171,11 +2218,10 @@ class MyanmarFinanceBot:
             )
             return
 
-        # --- (Block 2) Handle Category Selection (စားသောက်စရိတ် or လစာ) ---
+        # --- (Block 2) Handle Category Selection (MODIFIED FOR STEP 2) ---
         elif data.startswith('quick_add_category_') and state.get('mode') == 'quick_add_category':
             amount = state.get('quick_add_amount')
             all_categories = state.get('quick_add_categories')
-            # <-- (!!!) Get the saved type
             transaction_type = state.get('quick_add_type')
 
             if not amount or not all_categories or not transaction_type:
@@ -2193,11 +2239,26 @@ class MyanmarFinanceBot:
 
             description = f"Quick Add {category}"
 
-            # (!!!) Use the saved transaction_type
-            self.data_manager.add_transaction(
-                user_id, transaction_type, amount, description, category)
-            await query.edit_message_text(TEXTS["data_saved"].format(category=category, amount=amount))
-            context.user_data.clear()
+            # --- (!!!) NEW LOGIC (!!!) ---
+            # Data ကို တိုက်ရိုက် မသိမ်းတော့ဘဲ၊ User State ထဲမှာ ခဏ သိမ်းပါ
+            context.user_data['mode'] = 'awaiting_account_selection'
+            context.user_data['tx_data'] = {
+                'type': transaction_type,
+                'amount': amount,
+                'description': description,
+                'category': category
+            }
+            
+            # User ကို Account ရွေးခိုင်းမယ့် Helper Function ကို ခေါ်ပါ
+            prompt_text = TEXTS["select_account_prompt"].format(
+                tx_type=transaction_type, 
+                amount=amount, 
+                desc=description
+            )
+            # (!!!) Message ကို Edit လုပ်ပါ (!!!)
+            await self.prompt_account_selection(update, context, user_id, prompt_text)
+            # --- (!!!) End of New Logic (!!!) ---
+
             return
         # --- End of Quick Add Callbacks ---
 
@@ -3300,7 +3361,79 @@ class MyanmarFinanceBot:
         await update.callback_query.edit_message_text(TEXTS["account_add_prompt"], parse_mode=ParseMode.MARKDOWN)
 
     # (!!!) --- End of New Account Functions --- (!!!)
-    
+    # (!!!) --- NEW: Budget Alert Helper Function --- (!!!)
+    async def check_budget_alert(self, user_id: int, category: str, amount: int, context: ContextTypes.DEFAULT_TYPE):
+        """Checks and sends a budget alert if needed."""
+        try:
+            budgets = self.data_manager.get_budgets(user_id)
+            if category in budgets:
+                current_tx = {'type': 'expense', 'amount': amount, 'category': category}
+                _, _, alert_needed = self.calculate_budget_status(
+                    user_id, current_tx=current_tx)
+
+                if alert_needed:
+                    budgeted_amount = budgets[category]
+                    today = dt.datetime.now()
+                    start_of_month = today.replace(
+                        day=1, hour=0, minute=0, second=0)
+                    transactions = self.data_manager.get_transactions(
+                        user_id, start_date=start_of_month)
+                    expense_df = pd.DataFrame(
+                        [tx for tx in transactions if tx['type'] == 'expense'])
+                    spent = expense_df[expense_df['category']
+                                       == category]['amount'].sum()
+                    remaining = budgeted_amount - spent
+                    percent_spent = (spent / budgeted_amount) * 100
+
+                    alert_message = TEXTS["budget_alert_overrun"].format(
+                        category=category,
+                        budget=budgeted_amount,
+                        percent=percent_spent,
+                        spent=spent,
+                        remaining=remaining
+                    )
+                    await context.bot.send_message(user_id, alert_message, parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            logger.error(f"Failed to check budget alert for user {user_id}: {e}")
+    # (!!!) --- End of New Helper --- (!!!)
+    # (!!!) --- NEW: Helper Function for Account Selection --- (!!!)
+    async def prompt_account_selection(self, update_or_message: Update | Any, context: ContextTypes.DEFAULT_TYPE, user_id: int, prompt_text: str):
+        """
+        User ကို Account ရွေးခိုင်းတဲ့ ခလုတ်တွေ (Keyboard) ကို ပြပေးမယ့် Helper Function
+        """
+        accounts = self.data_manager.get_accounts(user_id)
+        
+        # Account မရှိသေးရင်၊ Account အရင် ဆောက်ခိုင်းပါ
+        if not accounts:
+            await context.bot.send_message(user_id, TEXTS["no_accounts_error"], parse_mode=ParseMode.MARKDOWN)
+            context.user_data.clear() # State ကို ရှင်းလင်းပါ
+            return
+
+        keyboard = []
+        row = []
+        for acc in accounts:
+            # Callback data မှာ account ID ကို ထည့်ပေးပါ
+            row.append(InlineKeyboardButton(f"💰 {acc.name}", callback_data=f'tx_select_account_{acc.id}'))
+            if len(row) == 2: # တစ်တန်းမှာ ၂ ခု
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+            
+        # "Account မသတ်မှတ်" ဆိုတဲ့ ခလုတ်ကို အောက်ဆုံးမှာ ထည့်ပေးပါ
+        keyboard.append([InlineKeyboardButton(TEXTS["select_account_button_none"], callback_data='tx_select_account_none')])
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        # Message ကို Edit လုပ်မလား (Quick Add) / Message အသစ် ပို့မလား (Normal Add)
+        if isinstance(update_or_message, Update) and update_or_message.callback_query:
+            # This is a callback query (from Quick Add), so edit the message
+            await update_or_message.callback_query.edit_message_text(prompt_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        else:
+            # This is a new message (from Normal Add), so send a new message
+            await context.bot.send_message(user_id, prompt_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+
+    # (!!!) --- End of New Helper Function --- (!!!)
 # --- (STEP 4) NEW: Admin Dashboard Handlers ---
 
     async def admin_dashboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
