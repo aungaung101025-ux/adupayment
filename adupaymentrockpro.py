@@ -165,7 +165,7 @@ TEXTS = {
         ["📊 အခြေအနေ", "🧾 အစီရင်ခံစာ"],
         ["🗓️ Reminder", "🎯 ဘတ်ဂျက်"],
         ["⚙️ စီမံခန့်ခွဲ", "⭐️ Premium"],
-        ["🔒 Privacy"]
+        ["💡 အကြံပြုမည်", "🔒 Privacy"]
     ],
     "help_text": "ကျွန်ုပ်သည် သင့်ရဲ့ ဝင်ငွေနှင့် အသုံးစရိတ်များကို စနစ်တကျမှတ်သားပြီး၊ အစီရင်ခံစာများ ထုတ်ပေးနိုင်သော ဘော့ဖြစ်ပါသည်။\n\n**အဓိက လုပ်ဆောင်ချက်များ:**\n- `[ဝင်ငွေ/ထွက်ငွေ] [ပမာဏ] [ဖော်ပြချက်]` ပုံစံဖြင့် ငွေစာရင်းသွင်းပါ။\n- `📊 အခြေအနေကြည့်ရန်`: လက်ရှိလ စုစုပေါင်းအခြေအနေကြည့်ရန်\n- `🧾 လစဉ်အစီရင်ခံစာ`: လစဉ်အစီရင်ခံစာ (PDF/Excel) ထုတ်ရန်\n- `/budget_status`: လစဉ်ဘတ်ဂျက်အခြေအနေကြည့်ရန်\n- `⭐️ Premium Features`: အခပေး လုပ်ဆောင်ချက်များ စုံစမ်းရန်\n- `/help`: အကူအညီ ရယူရန်\n- `/admin`: (Admin Only) Admin Dashboard ကို ဖွင့်ရန်\n- `🔒 Privacy`: လုံခြုံရေးနှင့် ပုဂ္ဂိုလ်ရေးဆိုင်ရာ မူဝါဒများ\n- `/delete_my_data`: သင်၏ အချက်အလက်များအားလုံးကို ဖျက်ရန်",
     "start_add_income": "💰 ဝင်ငွေ မှတ်တမ်းတင်ရန်၊ အောက်ပါပုံစံဖြင့် ရိုက်ထည့်ပေးပါ။\n\n`ဝင်ငွေ [ပမာဏ] [ဖော်ပြချက်]`\nဥပမာ။ ။ `ဝင်ငွေ 500000 လစာ`",
@@ -389,6 +389,14 @@ TEXTS = {
     "info_weekly_summary_text": "သင် သတ်မှတ်ထားတဲ့ နေ့ (ဥပမာ- တနင်္ဂနွေ) ရောက်တိုင်း၊ အဲ့ဒီ အပတ်ရဲ့ ငွေစာရင်း အကျဉ်းချုပ်ကို အလိုအလျောက် ပို့ပေးမယ့် feature ပါ။",
     "info_monthly_report_text": "သင်၏ လစဉ် ငွေစာရင်း အပြည့်အစုံကို PDF သို့မဟုတ် Excel file အဖြစ် ထုတ်ယူနိုင်ပါသည်။",
     "info_quick_add_text": "သင် ရိုက်ထည့်လိုက်သော ပမာဏကို 'ဝင်ငွေ' လား 'ထွက်ငွေ' လား ရွေးချယ်ပြီး အမြန် မှတ်တမ်းတင်နိုင်ပါသည်။",
+    # --- Feedback Feature Texts ---
+    "feedback_button": "💡 အကြံပြုမည်",
+    "feedback_prompt": "ကျေးဇူးပြု၍ သင်၏ အကြံပြုချက်ကို ဤနေရာတွင် ရိုက်ထည့်ပေးပါ။\n\nပယ်ဖျက်လိုပါက `cancel` ဟု ရိုက်ထည့်ပါ။",
+    "feedback_cancel": "❌ အကြံပြုချက် ပေးပို့ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။",
+    "feedback_admin_header": "💡 **New Feedback Received!**",
+    "feedback_admin_details": "----------------------------------\n**User:** {user_name}\n**User ID:** `{user_id}`\n**Feedback:**\n{feedback_text}",
+    "feedback_success": "✅ သင်၏ အကြံပြုချက်ကို Admin ထံသို့ အောင်မြင်စွာ ပေးပို့လိုက်ပါပြီ။ ကျေးဇူးတင်ပါသည်။",
+    "feedback_error": "❌ အမှားအယွင်းတစ်ခုကြောင့် Admin ထံ ပို့၍ မရသေးပါ။",
     # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
     
     "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\nဤလုပ်ဆောင်ချက်သည် Premium အသုံးပြုသူများအတွက်သာ ဖြစ်ပါသည်။\n\nPremium Plan ဝယ်ယူရန် 'Premium Plan ယူရန်' ကို နှိပ်ပါ သို့မဟုတ် ၇ ရက် အစမ်းသုံးရန် 'Free Trial' ကို နှိပ်ပါ။",
@@ -1569,17 +1577,57 @@ class MyanmarFinanceBot:
 
     # --- MAIN MESSAGE HANDLER (UPDATED for Step 6) ---
 
+    # --- MAIN MESSAGE HANDLER (UPDATED for Step 6) ---
+
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not update.message or not update.message.text:
             return
 
         text = update.message.text.strip()
         user_id = update.effective_user.id
+        user = update.effective_user # <-- (!!!) User ကိုပါ ယူထားလိုက်ပါ (!!!)
 
         user_state = context.user_data
 
+        # --- (!!!) အောက်ပါ Code Block အသစ်ကို ထပ်ထည့်ပါ (!!!) ---
+        # --- Handle: Awaiting Feedback State ---
+        if user_state.get('mode') == 'awaiting_feedback':
+            if text.lower() == 'cancel':
+                await update.message.reply_text(TEXTS["feedback_cancel"])
+                context.user_data.clear()
+                return
+
+            # Admin ဆီ ပို့မယ့် Message ကို ပြင်ဆင်ပါ
+            admin_message = f"""{TEXTS["feedback_admin_header"]}
+{TEXTS["feedback_admin_details"].format(
+    user_name=user.mention_html(),
+    user_id=user_id,
+    feedback_text=text
+)}
+"""
+            try:
+                # Admin ဆီ ပို့ပါ
+                await context.bot.send_message(
+                    chat_id=self.ADMIN_ID,
+                    text=admin_message,
+                    parse_mode=ParseMode.HTML
+                )
+                # User ကို ကျေးဇူးတင်ကြောင်း ပြောပါ
+                await update.message.reply_text(TEXTS["feedback_success"])
+                
+            except Exception as e:
+                logger.error(f"Failed to send feedback to admin: {e}")
+                await update.message.reply_text(TEXTS["feedback_error"])
+            
+            # State ကို ရှင်းလင်းပါ
+            context.user_data.clear()
+            return
+        # --- (!!!) အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ (!!!) ---
+
+
         # --- (STEP 5) Quick Add Number Check ---
         quick_add_match = re.match(r'^\d+$', text)
+        # ... (ဒီနေရာက ကျန်တဲ့ code တွေ ဒီအတိုင်း ထားပါ) ...
         if quick_add_match and not user_state:
             try:
                 amount = int(text)
@@ -1701,7 +1749,11 @@ class MyanmarFinanceBot:
         elif text == TEXTS["main_reply_buttons"][3][0]:  # ⚙️ စီမံခန့်ခွဲ
             await self.manage_transactions_menu(update, context)
             return
-        elif text == TEXTS["main_reply_buttons"][4][0]:  # 🔒 Privacy
+        elif text == TEXTS["main_reply_buttons"][4][0]:  # 💡 အကြံပြုမည်  <-- (!!!) ဒီ Block အသစ်ကို ထည့်ပါ (!!!)
+            context.user_data['mode'] = 'awaiting_feedback'
+            await update.message.reply_text(TEXTS["feedback_prompt"])
+            return
+        elif text == TEXTS["main_reply_buttons"][4][1]:  # 🔒 Privacy
             await self.privacy(update, context)
             return
 
