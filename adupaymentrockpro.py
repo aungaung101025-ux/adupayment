@@ -174,7 +174,7 @@ CLEAN_FONT_PATH = FONT_PATH.replace(os.path.sep, '/')
 
 # ----------------------- Texts (Myanmar/English) -----------------------
 TEXTS = {
-    "start_welcome": "မင်္ဂလာပါ! ကျွန်ုပ်ကတော့ သင့်ရဲ့ ကိုယ်ပိုင် ငွေကြေးစီမံခန့်ခွဲမှု ဘော့ပါ။ အောက်ပါ ခလုတ်များဖြင့် စတင်အသုံးပြုနိုင်ပါပြီ။",
+    "start_welcome": "မင်္ဂလာပါ! ကျွန်ုပ်ကတော့ သင့်ရဲ့ ကိုယ်ပိုင် ငွေကြေးစီမံခန့်ခွဲမှု ဘော့ပါ။ အောက်ပါ ခလုတ်များဖြင့် စတင်အသုံးပြုနိုင်ပါပြီ (သို့မဟုတ်) သင်မှတ်သားလိုသော ငွေတန်ဖိုးတစ်ခုရိုက်ထည့်ပြီး စတင်နိုင်ပါပြီ။",
     "main_reply_buttons": [
         ["💰 ဝင်ငွေ", "💸 ထွက်ငွေ"],
         ["📊 အခြေအနေ", "🧾 အစီရင်ခံစာ"],
@@ -223,11 +223,11 @@ TEXTS = {
 
     "premium_payment_wave": "WavePay",
     "premium_payment_kpay": "KBZPay",
-    "premium_payment_aya": "AYA Bank",
+    "premium_payment_aya": "AYAPay",
 
     "premium_payment_details_wave": "အမည်: `U Aung Thu`\nဖုန်းနံပါတ်: `09 676 587 798`",
     "premium_payment_details_kpay": "အမည်: `U Aung Thu`\nဖုန်းနံပါတ်: `09 770 898 468`",
-    "premium_payment_details_aya": "အမည်: `U Aung Thu`\nBank Account: `1234 5678 9012`",
+    "premium_payment_details_aya": "အမည်: `U Aung Thu`\nဖုန်းနံပါတ်: `09 770 898 468`",
 
     "premium_granted": "🎉 **ဂုဏ်ယူပါတယ်!** သင်၏ Premium သုံးစွဲခွင့်ကို {end_date} နေ့အထိ ဖွင့်ပေးလိုက်ပါပြီ။ Premium လုပ်ဆောင်ချက်အားလုံးကို စတင်အသုံးပြုနိုင်ပါပြီ။",
     "premium_trial_granted": "🎁 **Free Trial စတင်ပါပြီ!**\nPremium လုပ်ဆောင်ချက်အားလုံးကို ၇ ရက် ( {end_date} နေ့အထိ ) အခမဲ့ သုံးစွဲနိုင်ပါပြီ။ မပြည့်ခင် အခပေး Plan သို့ ပြောင်းလဲနိုင်ပါသည်။",
