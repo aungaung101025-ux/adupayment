@@ -2533,16 +2533,17 @@ class MyanmarFinanceBot:
         if data == 'goal_tracking_menu':
             await self.goal_tracking_menu(update, context)
             return
+        # (Line 1404)
         elif data == 'goal_add_start':
-        # (!!!) --- ဒီနေရာမှာ စစ်ဆေးမှု ထည့်ပါ --- (!!!)
-        if not await self.check_goal_limit(update, context):
-            await query.answer() # Paywall message ပို့ပြီးပြီမို့ answer() ပဲ ခေါ်ပါ။
+            # (!!!) --- ဒီနေရာမှာ စစ်ဆေးမှု ထည့်ပါ --- (!!!)
+            if not await self.check_goal_limit(update, context): # <--- ဒီလို အတွင်းထဲ ရောက်ရပါမယ်
+                await query.answer() # Paywall message ပို့ပြီးပြီမို့ answer() ပဲ ခေါ်ပါ။
+                return
+            # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
+    
+            await query.edit_message_text(TEXTS['goal_menu_header'], reply_markup=None) # <--- ဒီ code တွေပါ...
+            await self.start_add_goal_flow(user_id, context) # <--- ...အတွင်းထဲ ရောက်ရပါမယ်
             return
-        # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
-
-        await query.edit_message_text(TEXTS['goal_menu_header'], reply_markup=None)
-        await self.start_add_goal_flow(user_id, context)
-        return
         elif data == 'goal_view_progress':
             await self.view_goal_progress(update, context)
             return
