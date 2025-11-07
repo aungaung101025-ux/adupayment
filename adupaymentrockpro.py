@@ -1990,13 +1990,14 @@ class MyanmarFinanceBot:
 
             return # Function ကို ဒီမှာတင် ရပ်လိုက်ပါ
 
+        # (Line 1028)
         elif command in ["ဘတ်ဂျက်", "budget"]:
-        # (!!!) --- ဒီနေရာကို ပြောင်းပါ --- (!!!)
-        if not await self.check_budget_limit(update, context):
-            return
-        # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
-
-        if len(parts) != 3:
+            # (!!!) --- ဒီနေရာကို ပြောင်းပါ --- (!!!)
+            if not await self.check_budget_limit(update, context): # <--- ဒီလို အတွင်းထဲ ရောက်ရပါမယ်
+                return
+            # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
+        
+            if len(parts) != 3: # <--- ဒီ code တွေ အကုန်လုံး...
                 await update.message.reply_text(TEXTS["budget_set_start"])
                 return
             try:
@@ -2013,7 +2014,7 @@ class MyanmarFinanceBot:
                 return
             self.data_manager.set_budget(user_id, category, amount)
             await update.message.reply_text(TEXTS["budget_set_success"].format(category=category, amount=amount))
-            return
+            return # <--- ...ဒီအထိ အကုန် Indent ဝင်ရပါမယ်
 
         await update.message.reply_text(TEXTS["unknown_command"])
 
