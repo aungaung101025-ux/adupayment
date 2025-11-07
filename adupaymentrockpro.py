@@ -448,7 +448,11 @@ TEXTS = {
     # --- (!!!) End of New Texts (!!!) ---
 
     "premium_paywall": "🚫 **Premium Feature သုံးစွဲခွင့် မရှိသေးပါ** 🚫\n\nဤလုပ်ဆောင်ချက်သည် Premium အသုံးပြုသူများအတွက်သာ ဖြစ်ပါသည်။\n\nPremium Plan ဝယ်ယူရန် 'Premium Plan ယူရန်' ကို နှိပ်ပါ သို့မဟုတ် ၇ ရက် အစမ်းသုံးရန် 'Free Trial' ကို နှိပ်ပါ။",
-
+    # (!!!) --- အောက်ပါ (၃) ခုကို အသစ် ထပ်ထည့်ပါ --- (!!!)
+    "paywall_budget_limit": "🚫 **Budget ကန့်သတ်ချက် ပြည့်သွားပါပြီ** 🚫\n\nFree Plan တွင် Budget (၁) ခုသာ သတ်မှတ်နိုင်ပါသည်။\n\nBudget အရေအတွက် အကန့်အသတ်မရှိ သတ်မှတ်နိုင်ရန်နှင့် အဆင့်မြင့် သတိပေးချက်များ ရရှိနိုင်ရန် Premium Plan သို့ အဆင့်မြှင့်တင်ပါ။",
+    "paywall_goal_limit": "🚫 **ပန်းတိုင် ကန့်သတ်ချက် ပြည့်သွားပါပြီ** 🚫\n\nFree Plan တွင် ငွေကြေး ပန်းတိုင် (၁) ခုသာ ထားရှိနိုင်ပါသည်။\n\nပန်းတိုင်များစွာဖြင့် သင်၏ အိပ်မက်များကို အကောင်အထည်ဖော်ရန် Premium Plan သို့ အဆင့်မြှင့်တင်ပါ။",
+    "paywall_category_limit": "🚫 **Category ကန့်သတ်ချက် ပြည့်သွားပါပြီ** 🚫\n\nFree Plan တွင် စိတ်ကြိုက် Category (၂) ခုသာ ဖန်တီးနိုင်ပါသည်။\n\nCategory များ စိတ်ကြိုက် အကန့်အသတ်မရှိ ဖန်တီးနိုင်ရန် Premium Plan သို့ အဆင့်မြှင့်တင်ပါ။",
+    # (!!!) --- အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ --- (!!!)
 }
 # -------------------------------------------------------------------
 
@@ -894,13 +898,88 @@ class MyanmarFinanceBot:
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return False
+    # (!!!) --- အောက်ပါ Function (၃) ခုလုံးကို Class ထဲသို့ အသစ် ထပ်ထည့်ပါ --- (!!!)
+
+    async def _send_limited_paywall(self, context: ContextTypes.DEFAULT_TYPE, user_id: int, message_key: str):
+        """Helper function to send the limit paywall message."""
+        keyboard = [
+            [InlineKeyboardButton("⭐️ Premium Plan ယူရန်",
+                                  callback_data='premium_0')],
+            [InlineKeyboardButton("🎁 ၇ ရက် Free Trial ယူရန်",
+                                  callback_data='premium_1')]
+        ]
+        await context.bot.send_message(
+            user_id,
+            TEXTS[message_key],
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    async def check_budget_limit(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+        """
+        Budget ကန့်သတ်ချက်ကို စစ်ဆေးပါ။
+        Premium ဆိုလျှင် -> True (အမြဲတမ်း OK)
+        Free User ဆိုလျှင် -> (၁) ခုအောက်ဆို True၊ (၁) ခု ပြည့်သွားလျှင် False
+        """
+        user_id = update.effective_user.id
+        status = self.data_manager.get_premium_status(user_id)
+
+        if status['is_premium']:
+            return True  # Premium users have no limit
+
+        # Free user check
+        FREE_LIMIT = 1
+        current_budgets = self.data_manager.get_budgets(user_id)
+        count = len(current_budgets)
+
+        if count < FREE_LIMIT:
+            return True  # Free user is still under the limit
+        else:
+            # Limit reached, send paywall and return False
+            await self._send_limited_paywall(context, user_id, "paywall_budget_limit")
+            return False
+
+    async def check_goal_limit(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+        """Goal ကန့်သတ်ချက်ကို စစ်ဆေးပါ။ (Free Limit = 1)"""
+        user_id = update.effective_user.id
+        status = self.data_manager.get_premium_status(user_id)
+
+        if status['is_premium']:
+            return True
+
+        FREE_LIMIT = 1
+        current_goals = self.data_manager.get_all_goals(user_id)
+        count = len(current_goals)
+
+        if count < FREE_LIMIT:
+            return True
+        else:
+            await self._send_limited_paywall(context, user_id, "paywall_goal_limit")
+            return False
+
+    async def check_category_limit(self, update: Update, context: ContextTypes.DEFAULT_TYPE, category_type: str) -> bool:
+        """Custom Category ကန့်သတ်ချက်ကို စစ်ဆေးပါ။ (Free Limit = 2)"""
+        user_id = update.effective_user.id
+        status = self.data_manager.get_premium_status(user_id)
+
+        if status['is_premium']:
+            return True
+
+        FREE_LIMIT = 2 # ဥပမာ- Free user ကို (၂) ခု ပေးမည်
+        current_categories = self.data_manager.get_custom_categories(user_id, category_type)
+        count = len(current_categories)
+
+        if count < FREE_LIMIT:
+            return True
+        else:
+            await self._send_limited_paywall(context, user_id, "paywall_category_limit")
+            return False
+            
+    # (!!!) --- အသစ်ထည့်ခြင်း ပြီးဆုံးပါပြီ --- (!!!)
 
     # --- Handler: Goal Tracking Menu ---
     async def goal_tracking_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
-        if not await self.check_premium(user_id, context):
-            return
-
         goals = self.data_manager.get_all_goals(user_id)
 
         keyboard = [
@@ -1322,11 +1401,6 @@ class MyanmarFinanceBot:
     # --- Budget Status Handler ---
     async def budget_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
-
-        if not self.data_manager.get_premium_status(user_id)['is_premium']:
-            await self.check_premium(user_id, context)
-            return
-
         response_text, _, _ = self.calculate_budget_status(user_id)
 
         if response_text == TEXTS["budget_no_set"]:
@@ -1796,7 +1870,11 @@ class MyanmarFinanceBot:
         if user_state.get('mode') == 'add_category':
             cat_type = user_state['type']
             cat_name = text.strip()
-
+            # (!!!) --- ဒီနေရာမှာ စစ်ဆေးမှု ထည့်ပါ --- (!!!)
+            if not await self.check_category_limit(update, context, cat_type):
+                context.user_data.clear()
+                return
+            # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
             default_cats = TEXTS['expense_categories'] if cat_type == 'expense' else TEXTS['income_categories']
             if cat_name in default_cats:
                 await update.message.reply_text(TEXTS["cat_add_fail_exists"].format(name=cat_name))
@@ -1913,11 +1991,12 @@ class MyanmarFinanceBot:
             return # Function ကို ဒီမှာတင် ရပ်လိုက်ပါ
 
         elif command in ["ဘတ်ဂျက်", "budget"]:
-            if not self.data_manager.get_premium_status(user_id)['is_premium']:
-                await self.check_premium(user_id, context)
-                return
+        # (!!!) --- ဒီနေရာကို ပြောင်းပါ --- (!!!)
+        if not await self.check_budget_limit(update, context):
+            return
+        # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
 
-            if len(parts) != 3:
+        if len(parts) != 3:
                 await update.message.reply_text(TEXTS["budget_set_start"])
                 return
             try:
@@ -2454,9 +2533,15 @@ class MyanmarFinanceBot:
             await self.goal_tracking_menu(update, context)
             return
         elif data == 'goal_add_start':
-            await query.edit_message_text(TEXTS['goal_menu_header'], reply_markup=None)
-            await self.start_add_goal_flow(user_id, context)
+        # (!!!) --- ဒီနေရာမှာ စစ်ဆေးမှု ထည့်ပါ --- (!!!)
+        if not await self.check_goal_limit(update, context):
+            await query.answer() # Paywall message ပို့ပြီးပြီမို့ answer() ပဲ ခေါ်ပါ။
             return
+        # (!!!) --- ပြောင်းလဲမှု ပြီးပါပြီ --- (!!!)
+
+        await query.edit_message_text(TEXTS['goal_menu_header'], reply_markup=None)
+        await self.start_add_goal_flow(user_id, context)
+        return
         elif data == 'goal_view_progress':
             await self.view_goal_progress(update, context)
             return
