@@ -2061,13 +2061,27 @@ class MyanmarFinanceBot:
 
         state = context.user_data
 
-        # (!!!) This is correct (!!!)
         if data.startswith('info_'):
-            # ... (info logic) ...
+            # (!!!) --- THIS IS THE MISSING LOGIC --- (!!!)
+            info_key = data.replace('info_', '') # e.g., 'custom_report'
+            info_text_key = f"info_{info_key}_text" # e.g., 'info_custom_report_text'
+            
+            info_text = TEXTS.get(info_text_key, "ℹ️ ရှင်းလင်းချက် မရှိသေးပါ။")
+            
+            try:
+                # 'query.answer()' ကို သုံးပြီး Pop-up (Alert) ပြပါ
+                await query.answer(text=info_text, show_alert=True)
+            except Exception as e:
+                logger.error(f"Failed to show info alert: {e}")
+            
             return # Message ကို edit လုပ်စရာမလိုလို့ ဒီမှာတင် ရပ်လိုက်ပါ
+            # (!!!) --- END OF FIX --- (!!!)
         
         # --- (!!!) NEW: Account Callbacks (Corrected 'if' to 'elif') (!!!) ---
         elif data == 'account_menu':
+            await self.account_menu(update, context)
+            return
+        # ... (ကျန်တဲ့ code တွေ)
             await self.account_menu(update, context)
             return
         elif data == 'account_view':
