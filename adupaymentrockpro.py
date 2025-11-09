@@ -1265,6 +1265,52 @@ class MyanmarFinanceBot:
             await update.callback_query.edit_message_text(message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
         else:
             await context.bot.send_message(user_id, message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    async def summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        today = dt.datetime.now()
+        start_of_month = today.replace(day=1, hour=0, minute=0, second=0)
+
+        # --- Part 1: Monthly Flow (ယခုလ ဝင်ငွေ/ထွက်ငွေ) ---
+        transactions = self.data_manager.get_transactions(
+            user_id, start_date=start_of_month)
+        
+        total_income = 0
+        total_expense = 0
+        
+        if transactions:
+            df = pd.DataFrame(transactions)
+            total_income = df[df['type'] == 'income']['amount'].sum()
+            total_expense = df[df['type'] == 'expense']['amount'].sum()
+
+        month_str = format_myanmar_date(today)
+        response_text = f"{TEXTS['summary_current_month'].format(month=month_str)}\n{TEXTS['summary_details'].format(income=total_income, expense=total_expense, balance=(total_income - total_expense))}"
+
+        # --- Part 2: Account Balances (လက်ရှိ လက်ကျန်ငွေ စုစုပေါင်း) ---
+        accounts_with_balance = self.data_manager.get_accounts_with_balance(user_id)
+        unassigned_balance = self.data_manager.get_unassigned_balance(user_id)
+        
+        # User က data လုံးဝ မရှိရင် (Account လည်း မရှိ၊ Unassigned လည်း မရှိ၊ ဒီလ tx လည်း မရှိ)
+        if not accounts_with_balance and unassigned_balance == 0 and not transactions:
+            await context.bot.send_message(user_id, TEXTS["no_data"])
+            return
+        
+        # Account (သို့) Unassigned data ရှိမှသာ ဒီအပိုင်းကို ဆက်ပြပါ
+        if accounts_with_balance or unassigned_balance != 0:
+            response_text += TEXTS["summary_account_header"]
+            total_assigned_balance = 0
+            
+            for acc in accounts_with_balance:
+                response_text += TEXTS["summary_account_detail"].format(name=acc['name'], balance=acc['balance'])
+                total_assigned_balance += acc['balance']
+
+            # Show totals
+            response_text += TEXTS["summary_account_total"].format(total=total_assigned_balance)
+            response_text += TEXTS["summary_unassigned_balance"].format(unassigned=unassigned_balance)
+            
+            grand_total = total_assigned_balance + unassigned_balance
+            response_text += TEXTS["summary_grand_total"].format(grand_total=grand_total)
+
+        await context.bot.send_message(user_id, response_text, parse_mode=ParseMode.MARKDOWN)
 
         # --- Part 1: Monthly Flow (ယခုလ ဝင်ငွေ/ထွက်ငွေ) ---
         transactions = self.data_manager.get_transactions(
