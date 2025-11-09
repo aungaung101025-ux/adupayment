@@ -1924,10 +1924,7 @@ class MyanmarFinanceBot:
             await self.add_expense(update, context)
             return
         elif text == TEXTS["main_reply_buttons"][2][1]:  # 🎯 ဘတ်ဂျက်
-            if not self.data_manager.get_premium_status(user_id)['is_premium']:
-                await self.check_premium(user_id, context)
-                return
-            await update.message.reply_text(TEXTS["budget_set_start"], parse_mode=ParseMode.MARKDOWN)
+            await self.budget_status(update, context)
             return
         elif text == TEXTS["main_reply_buttons"][2][0]:  # 🗓️ သတိပေးချက်
             await self.reminder_menu(update, context)
