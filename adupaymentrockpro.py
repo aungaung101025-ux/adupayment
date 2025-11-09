@@ -3377,6 +3377,7 @@ class MyanmarFinanceBot:
             await context.bot.send_message(user_id, "❌ AI သုံးသပ်ချက် ပြုလုပ်ရာတွင် အမှားဖြစ်ပွားပါသည်။")
 
     # --- Manage Transactions Menu ---
+    # --- Manage Transactions Menu ---
     async def manage_transactions_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         recent_txs = self.data_manager.get_recent_transactions(
@@ -3398,17 +3399,23 @@ class MyanmarFinanceBot:
                 InlineKeyboardButton(TEXTS["backup_restore_button"], callback_data='backup_restore_menu'),
                 InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_backup_restore')
             ])
-        # ... (ကျန်တဲ့ code တွေ ဒီအတိုင်း ဆက်ထားပါ)
             keyboard.append([
                 InlineKeyboardButton("🔁 လစဉ် ထပ်တလဲလဲ (Recurring)", callback_data='recurring_tx_menu'),
                 InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_recurring_tx') # <-- ထည့်ရန်
             ])
 
+        # --- (!!!) START OF FIX (!!!) ---
+        
+        message_text = TEXTS['manage_tx_menu'] # <-- Default message header
+
         if not recent_txs:
-            if not is_premium:
-                await context.bot.send_message(user_id, TEXTS["no_recent_tx"])
-                return
+            # If no transactions, just add this text to the message
+            # "return" မလုပ်တော့ပါ
+            message_text += "\n\n" + TEXTS["no_recent_tx"]
         else:
+            # If there are transactions, add the selection prompt
+            message_text += "\n\n" + TEXTS['select_tx_action']
+            # And add the transactions to the keyboard
             for tx in recent_txs:
                 tx_date_obj = self._parse_date(tx['date'])
                 if tx_date_obj:
@@ -3420,11 +3427,10 @@ class MyanmarFinanceBot:
                 tx_label = f"{tx_date} - {tx_type_my} ({tx['category']}) : {tx['amount']:,.0f} Ks"
                 keyboard.append([InlineKeyboardButton(
                     tx_label, callback_data=f'tx_select_{tx["id"]}')])
+        
+        # --- (!!!) END OF FIX (!!!) ---
 
-        message_text = TEXTS['manage_tx_menu']
-        if recent_txs:
-            message_text += "\n\n" + TEXTS['select_tx_action']
-
+        # Now, send the combined message and keyboard
         if update.callback_query:
             try:
                 await update.callback_query.edit_message_text(
