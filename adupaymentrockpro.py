@@ -199,7 +199,7 @@ TEXTS = {
     "budget_set_start": "လစဉ် ဘတ်ဂျက် သတ်မှတ်ရန်၊ အောက်ပါပုံစံဖြင့် ရိုက်ထည့်ပေးပါ။\n\n`ဘတ်ဂျက် [ပမာဏ] [Category]`\nဥပမာ။ ။ `ဘတ်ဂျက် 300000 စားသောက်စရိတ်`",
     "budget_set_success": "✅ {category} အတွက် လစဉ် ဘတ်ဂျက် {amount:,.0f} Ks ကို သတ်မှတ်လိုက်ပါပြီ။",
     "budget_status_details": "💰 {month} အတွက် ဘတ်ဂျက်အခြေအနေ:\n\n{details}",
-    "budget_no_set": "ℹ️ ဘတ်ဂျက် သတ်မှတ်ထားခြင်း မရှိသေးပါ။",
+    "budget_no_set": "ℹ️ ဘတ်ဂျက် သတ်မှတ်ထားခြင်း မရှိသေးပါ။\n\nလစဉ် ဘတ်ဂျက် သတ်မှတ်ရန်၊ အောက်ပါပုံစံဖြင့် ရိုက်ထည့်ပေးပါ။\n\n`ဘတ်ဂျက် [ပမာဏ] [Category]`\nဥပမာ။ ။ `ဘတ်ဂျက် 300000 စားသောက်စရိတ်`",
     "reminder_set_start": "🗓️ **သတိပေးချက် စီမံခန့်ခွဲခြင်း**\n\nသင်လိုချင်သော သတိပေးချက် အမျိုးအစားကို ဖွင့်/ပိတ် လုပ်နိုင်ပါသည်။",
     "reminder_set_success": "✅ အပတ်စဉ် အစီရင်ခံစာကို {day} နေ့တိုင်း ပို့ပေးပါမည်။",
     "unknown_command": "❌ နားမလည်သော စာသား သို့မဟုတ် command ဖြစ်ပါသည်။ /start ကို နှိပ်၍ အစမှ ပြန်စပါ။",
@@ -1196,57 +1196,75 @@ class MyanmarFinanceBot:
         user_id = update.effective_user.id
         status = self.data_manager.get_premium_status(user_id)
 
+        # (!!!) --- NEW FREEMIUM LOGIC START --- (!!!)
+        # Free User ဖြစ်စေ၊ Premium User ဖြစ်စေ၊ Menu အားလုံးကို အရင် ပြပါ
+        
+        message_text = f"⭐️ **Premium Features များ**\n\n{TEXTS['premium_menu_content']}"
+
+        # --- Feature ခလုတ်တွေကို အရင် တည်ဆောက်ပါ ---
+        premium_buttons = [
+            # Row 1: Analytics
+            [
+                InlineKeyboardButton("📊 အသေးစိတ် ခွဲခြမ်းစိတ်ဖြာချက်", callback_data='open_analytics_menu'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_analytics')
+            ],
+            # Row 2: AI Analysis
+            [
+                InlineKeyboardButton(TEXTS["ai_analysis_button"], callback_data='ai_analysis'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_ai_analysis')
+            ],
+            # Row 3: Custom Category
+            [
+                InlineKeyboardButton("🏷️ စိတ်ကြိုက် Category", callback_data='open_custom_category_menu'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_category')
+            ],
+            # Row 4: Custom Report
+            [
+                InlineKeyboardButton("📄 Custom Report", callback_data='start_custom_report'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_report')
+            ],
+            # Row 5: Goal Tracking
+            [
+                InlineKeyboardButton("🎯 ငွေကြေး ပန်းတိုင်များ", callback_data='goal_tracking_menu'),
+                InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_goal_tracking')
+            ]
+        ]
+        
+        # --- User ရဲ့ အခြေအနေပေါ် မူတည်ပြီး အောက်ဆုံးက ခလုတ်တွေကို ပြောင်းပါ ---
         if status['is_premium']:
+            # Premium User ဖြစ်နေလျှင် - ကုန်ဆုံးရက်ကို ပြပါ
             end_date = dt.datetime.strptime(
                 status['end_date'], '%Y-%m-%d').strftime('%Y-%m-%d')
-            message_text = f"✅ **Premium Active!**\n\n**ကုန်ဆုံးရက်:** `{end_date}`\n\nPremium လုပ်ဆောင်ချက်အားလုံးကို သုံးစွဲနိုင်ပါပြီ။\n\n{TEXTS['premium_menu_content']}"
+            
+            message_text = f"✅ **Premium Active!**\n**ကုန်ဆုံးရက်:** `{end_date}`\n\n{TEXTS['premium_menu_content']}"
+            # Premium User က ဝယ်စရာမလိုတော့လို့ ခလုတ် ထပ်မထည့်ပါ
 
-            premium_buttons = [
-                # Row 1: Analytics
-                [
-                    InlineKeyboardButton("📊 အသေးစိတ် ခွဲခြမ်းစိတ်ဖြာချက်", callback_data='open_analytics_menu'),
-                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_analytics')
-                ],
-                # Row 2: AI Analysis
-                [
-                    InlineKeyboardButton(TEXTS["ai_analysis_button"], callback_data='ai_analysis'),
-                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_ai_analysis')
-                ],
-                # Row 3: Custom Category
-                [
-                    InlineKeyboardButton("🏷️ စိတ်ကြိုက် Category", callback_data='open_custom_category_menu'),
-                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_category')
-                ],
-                # Row 4: Custom Report
-                [
-                    InlineKeyboardButton("📄 Custom Report", callback_data='start_custom_report'),
-                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_custom_report')
-                ],
-                # Row 5: Goal Tracking
-                [
-                    InlineKeyboardButton("🎯 ငွေကြေး ပန်းတိုင်များ", callback_data='goal_tracking_menu'),
-                    InlineKeyboardButton(TEXTS["info_button_text"], callback_data='info_goal_tracking')
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(premium_buttons)
         else:
-            message_text = TEXTS['premium_menu_header'] + "\n\n" + \
-                TEXTS['premium_menu_content'] + \
-                "\n\n" + TEXTS['premium_paywall']
-            keyboard = [
-                [InlineKeyboardButton(
-                    "⭐️ Premium Plan ယူရန်", callback_data='premium_0')],
-                [InlineKeyboardButton(
-                    "🎁 ၇ ရက် Free Trial ယူရန်", callback_data='premium_1')]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
+            # Free User (ဒါမှမဟုတ် Trial ကုန်သွားသူ) ဖြစ်လျှင် - Paywall နဲ့ ဝယ်ရန် ခလုတ်များ ပြပါ
+            message_text += "\n\n" + TEXTS['premium_paywall'] # "Premium မရှိသေးပါ" စာတန်း ထည့်ပါ
+            
+            # "Premium ဝယ်ရန်" နှင့် "Free Trial" ခလုတ်များကို အောက်ဆုံးက ထပ်ပေါင်းပါ
+            premium_buttons.append([
+                InlineKeyboardButton(
+                    "⭐️ Premium Plan ယူရန်", callback_data='premium_0')
+            ])
+            
+            # Free Trial မသုံးရသေးမှသာ Trial ခလုတ်ကို ပြပါ
+            if not status['used_trial']:
+                premium_buttons.append([
+                    InlineKeyboardButton(
+                        "🎁 ၇ ရက် Free Trial ယူရန်", callback_data='premium_1')
+                ])
+        
+        # --- (!!!) NEW FREEMIUM LOGIC END --- (!!!)
 
-        await context.bot.send_message(user_id, message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        reply_markup = InlineKeyboardMarkup(premium_buttons)
 
-    async def summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        today = dt.datetime.now()
-        start_of_month = today.replace(day=1, hour=0, minute=0, second=0)
+        # Message ကို ပို့ပါ (သို့) Edit လုပ်ပါ
+        if update.callback_query:
+            await update.callback_query.edit_message_text(message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        else:
+            await context.bot.send_message(user_id, message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
 
         # --- Part 1: Monthly Flow (ယခုလ ဝင်ငွေ/ထွက်ငွေ) ---
         transactions = self.data_manager.get_transactions(
