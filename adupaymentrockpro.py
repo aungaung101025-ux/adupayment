@@ -383,6 +383,19 @@ TEXTS = {
     "restore_error_format": "❌ Error: ဤ file သည် ကျွန်ုပ်တို့၏ Backup file ပုံစံ မဟုတ်ပါ။ (Data များ မစုံလင်ပါ)",
     "restore_error_general": "❌ Restore ပြုလုပ်ရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။",
     "restore_cancelled": "❌ Restore ပြုလုပ်ခြင်းကို ပယ်ဖျက်လိုက်ပါသည်။",
+    # --- (!!!) NEW: Premium Reminder Texts (!!!) ---
+    "premium_reminder_3_days": """🔔 **Premium သက်တမ်း သတိပေးချက်**
+    
+သင်၏ Premium သုံးစွဲခွင့်သည် **(၃) ရက်** အတွင်း ( {end_date} နေ့) တွင် ကုန်ဆုံးတော့မည် ဖြစ်ပါသည်။
+    
+ဝန်ဆောင်မှု ပြတ်တောက်မှုမရှိစေရန် ကြိုတင် သက်တမ်းတိုးထားနိုင်ပါသည်။""",
+    
+    "premium_reminder_1_day": """🚨 **Premium သက်တမ်းကုန်ဆုံးခါနီး**
+    
+သင်၏ Premium သုံးစွဲခွင့်သည် **မနက်ဖြန်** ( {end_date} နေ့) တွင် ကုန်ဆုံးတော့မည် ဖြစ်ပါသည်။
+    
+ဆက်လက် အသုံးပြုနိုင်ရန် ယနေ့ပင် သက်တမ်းတိုးလိုက်ပါ။""",
+    # --- (!!!) End of New Texts (!!!) ---
 
     # ... (တခြား TEXTS တွေ)
 
@@ -3273,6 +3286,11 @@ class MyanmarFinanceBot:
                                'cron', hour=19, minute=0, name='Daily_Tx_Evening_Check')
         self.scheduler.add_job(self._check_and_run_recurring_tx,
                                'cron', hour=8, minute=0, name='Recurring_TX_Check')
+        # (!!!) NEW: Add Premium Reminder Job (!!!)
+        # နေ့စဉ် မနက် ၉ နာရီ ၁ မိနစ်မှာ run ပါ (တခြား job တွေနဲ့ တပြိုင်တည်း မဖြစ်အောင်)
+        self.scheduler.add_job(self._check_and_send_premium_reminders, 
+                               'cron', hour=9, minute=1, name='Premium_Expiration_Check')
+        # (!!!) End of New Job (!!!)
 
     async def _check_and_send_reminders(self):
         today = dt.datetime.now()
@@ -3354,7 +3372,65 @@ class MyanmarFinanceBot:
             except Exception as e:
                 logger.error(
                     f"Error processing recurring transaction for user {user_id}: {e}")
+    # ... ( _check_and_run_recurring_tx function ရဲ့ အောက်မှာ ထည့်ပါ) ...
+    async def _check_and_run_recurring_tx(self):
+        # ... (ဒီ function ထဲက code တွေ) ...
+            except Exception as e:
+                logger.error(
+                    f"Error processing recurring transaction for user {user_id}: {e}")
 
+    # (!!!) NEW: Scheduler Job for Premium Expiration (!!!)
+    async def _check_and_send_premium_reminders(self):
+        """
+        Checks for expiring premium users (3-day / 1-day) and sends them a reminder.
+        Runs daily via APScheduler.
+        """
+        logger.info("Running daily premium expiration check...")
+        
+        try:
+            expiring_users = self.data_manager.get_expiring_premium_users()
+            if not expiring_users:
+                logger.info("No expiring premium users found today.")
+                return
+
+            context = ContextTypes.DEFAULT_TYPE(application=self.application)
+            
+            # User ကို သက်တမ်းတိုးဖို့ ခလုတ်ပါ တစ်ခါတည်း ထည့်ပို့ပါမယ်
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("⭐️ Premium Plan သက်တမ်းတိုးရန်", callback_data='premium_0')]
+            ])
+
+            for user_info in expiring_users:
+                user_id = user_info['user_id']
+                end_date = user_info['end_date']
+                days_left = user_info['days_left']
+
+                if days_left == 3:
+                    message_key = "premium_reminder_3_days"
+                elif days_left == 1:
+                    message_key = "premium_reminder_1_day"
+                else:
+                    continue # မဖြစ်နိုင်သလောက်ပါပဲ
+
+                message_text = TEXTS[message_key].format(end_date=end_date)
+                
+                try:
+                    await context.bot.send_message(
+                        chat_id=user_id,
+                        text=message_text,
+                        parse_mode=ParseMode.MARKDOWN,
+                        reply_markup=keyboard
+                    )
+                    logger.info(f"Sent {days_left}-day premium reminder to user {user_id}")
+                except Exception as e:
+                    # Bot ကို Block သွားတဲ့ User တွေဆို ပို့လို့ရမှာ မဟုတ်ပါ
+                    logger.warning(f"Failed to send premium reminder to user {user_id}: {e}")
+        
+        except Exception as e:
+            logger.error(f"Error during _check_and_send_premium_reminders: {e}")
+    # (!!!) End of New Function (!!!)
+
+        # ... (ကျန်တဲ့ code တွေ)
     async def send_weekly_summary(self, user_id: int):
         class MockUpdate:
             def __init__(self, uid):

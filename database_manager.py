@@ -231,6 +231,64 @@ class DatabaseManager:
             
             logger.info(f"Granted premium to {user_id} for {days} days.")
             return end_date.strftime('%Y-%m-%d')
+
+    # (!!!) NEW: Premium Expiration Checker Function (!!!)
+    def get_expiring_premium_users(self) -> List[Dict[str, Any]]:
+        """
+        Premium သက်တမ်း (၃) ရက်အလို နှင့် (၁) ရက်အလို User များကို ရှာဖွေပေးသည်။
+        """
+        today = datetime.now().date()
+        
+        # (၃) ရက်အလို (ဥပမာ- ဒီနေ့ 11/11 -> 11/14 ကုန်မယ့်သူ)
+        target_date_3_days = (today + timedelta(days=3))
+        
+        # (၁) ရက်အလို (ဥပမာ- ဒီနေ့ 11/11 -> 11/12 ကုန်မယ့်သူ)
+        target_date_1_day = (today + timedelta(days=1))
+        
+        expiring_users = []
+        
+        try:
+            with get_session() as session:
+                # (၃) ရက်အလို User များကို ရှာသည်
+                # premium_end_date က (target_date_3_days 00:00:00) နဲ့ (target_date_3_days 23:59:59) ကြားမှာ ရှိရမယ်
+                start_of_day_3 = datetime.combine(target_date_3_days, datetime.min.time())
+                end_of_day_3 = datetime.combine(target_date_3_days, datetime.max.time())
+
+                users_3_days = session.query(User).filter(
+                    User.premium_is_premium == True,
+                    User.premium_end_date.between(start_of_day_3, end_of_day_3)
+                ).all()
+                
+                for user in users_3_days:
+                    expiring_users.append({
+                        'user_id': user.id,
+                        'end_date': user.premium_end_date.strftime('%Y-%m-%d'),
+                        'days_left': 3  # (၃) ရက်အလို
+                    })
+
+                # (၁) ရက်အလို User များကို ရှာသည်
+                start_of_day_1 = datetime.combine(target_date_1_day, datetime.min.time())
+                end_of_day_1 = datetime.combine(target_date_1_day, datetime.max.time())
+                
+                users_1_day = session.query(User).filter(
+                    User.premium_is_premium == True,
+                    User.premium_end_date.between(start_of_day_1, end_of_day_1)
+                ).all()
+
+                for user in users_1_day:
+                    expiring_users.append({
+                        'user_id': user.id,
+                        'end_date': user.premium_end_date.strftime('%Y-%m-%d'),
+                        'days_left': 1  # (၁) ရက်အလို
+                    })
+                    
+            logger.info(f"Found {len(expiring_users)} users with expiring premium.")
+            return expiring_users
+
+        except Exception as e:
+            logger.error(f"Database error while fetching expiring users: {e}")
+            return []
+    # (!!!) End of New Function (!!!)
             
     # --- Custom Category Methods ---
     def get_custom_categories(self, user_id: int, type: str) -> List[str]:
