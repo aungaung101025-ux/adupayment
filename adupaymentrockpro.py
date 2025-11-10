@@ -1965,49 +1965,115 @@ class MyanmarFinanceBot:
             await self.privacy(update, context)
             return
 
-        # 7. --- Handle Transaction/Budget Input (MODIFIED FOR STEP 2) ---
+        # 7. --- Handle Transaction/Budget Input (MODIFIED FOR SMART REPLY) ---
         parts = text.split(maxsplit=2)
         command = parts[0].lower()
 
+        # ==========================================================
+        # 💡 START: SMART REPLY LOGIC
+        # ==========================================================
         if command in ["ဝင်ငွေ", "income", "ထွက်ငွေ", "expense"]:
-            if len(parts) != 3:
-                await update.message.reply_text(TEXTS["invalid_format"])
-                return
             
             tx_type = 'income' if command in ["ဝင်ငွေ", "income"] else 'expense'
-            try:
-                amount = int(parts[1].replace(',', '').replace('.', ''))
-            except ValueError:
+
+            # --- Case 1: Full Input (ပုံစံအပြည့်အစုံ) ---
+            # ဥပမာ: "ဝင်ငွေ 50000 လစာ" (parts = 3)
+            if len(parts) == 3:
+                try:
+                    amount = int(parts[1].replace(',', '').replace('.', ''))
+                except ValueError:
+                    await update.message.reply_text(TEXTS["invalid_format"])
+                    return
+                description = parts[2].strip()
+
+                all_categories = self.data_manager.get_all_categories(
+                    user_id, tx_type, TEXTS[f"{tx_type}_categories"])
+                category = next(
+                    (c for c in all_categories if c in description), all_categories[-1])
+
+                # (ဒါက ခင်ဗျားရဲ့ မူလ code ပါ၊ Account ရွေးခိုင်းတဲ့ နေရာ)
+                context.user_data.clear() 
+                context.user_data['mode'] = 'awaiting_account_selection'
+                context.user_data['tx_data'] = {
+                    'type': tx_type,
+                    'amount': amount,
+                    'description': description,
+                    'category': category
+                }
+                
+                prompt_text = TEXTS["select_account_prompt"].format(
+                    tx_type=command, 
+                    amount=amount, 
+                    desc=description
+                )
+                await self.prompt_account_selection(update.message, context, user_id, prompt_text)
+                return
+
+            # --- Case 2: Smart Reply (ဖော်ပြချက် မပါ) ---
+            # ဥပမာ: "ဝင်ငွေ 50000" (parts = 2)
+            elif len(parts) == 2:
+                try:
+                    amount = int(parts[1].replace(',', '').replace('.', ''))
+                except ValueError:
+                    # ဥပမာ: "ဝင်ငွေ test" လို့ရိုက်ရင် ဒါက invalid format ပါ
+                    await update.message.reply_text(TEXTS["invalid_format"])
+                    return
+
+                # --- 💡 Smart Reply Logic ---
+                # ပမာဏ မှန်ကန်တယ်၊ ဒါကြောင့် "Quick Add" logic ကို ပြန်ခေါ်သုံးပါမယ်
+                # "Quick Add" ရဲ့ ဒုတိယအဆင့် (Category ရွေးခိုင်းတဲ့) နေရာကနေ တန်းစပါမယ်
+                
+                context.user_data.clear()
+                context.user_data['mode'] = 'quick_add_category' # <-- Step 2 ကနေ စမယ်
+                context.user_data['quick_add_amount'] = amount
+                context.user_data['quick_add_type'] = tx_type # <-- Type ကို ကြိုသိတယ်
+
+                all_categories = self.data_manager.get_all_categories(
+                    user_id, tx_type, TEXTS[f"{tx_type}_categories"])
+                
+                context.user_data['quick_add_categories'] = all_categories
+
+                # Category ခလုတ်တွေ ဆောက်ပါ (Quick Add ထဲက logic ကို copy ကူးပါ)
+                keyboard = []
+                row = []
+                for index, cat in enumerate(all_categories):
+                    row.append(InlineKeyboardButton(
+                        cat, callback_data=f'quick_add_category_{index}'))
+                    if len(row) == 3:
+                        keyboard.append(row)
+                        row = []
+                if row:
+                    keyboard.append(row)
+                
+                # User ကို Message ပြပါ
+                prompt_text = TEXTS["quick_add_prompt_category"].format(amount=amount)
+                if tx_type == 'income':
+                    prompt_text = f"💰 **{amount:,.0f} Ks** ကို ဝင်ငွေ (Income) အဖြစ် မှတ်သားပါမည်။\n\n👇 ကျေးဇူးပြု၍ Category တစ်ခု ရွေးချယ်ပါ။"
+
+                await update.message.reply_text(
+                    prompt_text,
+                    parse_mode=ParseMode.MARKDOWN,
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+
+            # --- Case 3: Command Only (ပမာဏ မပါ) ---
+            # ဥပမာ: "ဝင်ငွေ" (parts = 1)
+            elif len(parts) == 1:
+                if tx_type == 'income':
+                    await self.add_income(update, context) # ရှင်းပြစာ ပို့ပါ
+                else:
+                    await self.add_expense(update, context) # ရှင်းပြစာ ပို့ပါ
+                return
+            
+            # Failsafe (ဖြစ်လေ့မရှိ)
+            else:
                 await update.message.reply_text(TEXTS["invalid_format"])
                 return
-            description = parts[2].strip()
-
-            all_categories = self.data_manager.get_all_categories(
-                user_id, tx_type, TEXTS[f"{tx_type}_categories"])
-            category = next(
-                (c for c in all_categories if c in description), all_categories[-1])
-
-            # --- (!!!) NEW LOGIC (!!!) ---
-            # Data ကို တိုက်ရိုက် မသိမ်းတော့ဘဲ၊ User State ထဲမှာ ခဏ သိမ်းပါ
-            context.user_data.clear() # State အဟောင်း ရှင်းပါ
-            context.user_data['mode'] = 'awaiting_account_selection'
-            context.user_data['tx_data'] = {
-                'type': tx_type,
-                'amount': amount,
-                'description': description,
-                'category': category
-            }
-            
-            # User ကို Account ရွေးခိုင်းမယ့် Helper Function ကို ခေါ်ပါ
-            prompt_text = TEXTS["select_account_prompt"].format(
-                tx_type=command, 
-                amount=amount, 
-                desc=description
-            )
-            await self.prompt_account_selection(update.message, context, user_id, prompt_text)
-            # --- (!!!) End of New Logic (!!!) ---
-
-            return # Function ကို ဒီမှာတင် ရပ်လိုက်ပါ
+        
+        # ==========================================================
+        # 💡 END: SMART REPLY LOGIC
+        # ==========================================================
 
         # (Line 1028)
         elif command in ["ဘတ်ဂျက်", "budget"]:
@@ -2036,7 +2102,6 @@ class MyanmarFinanceBot:
             return # <--- ...ဒီအထိ အကုန် Indent ဝင်ရပါမယ်
 
         await update.message.reply_text(TEXTS["unknown_command"])
-
     # --- Handle Screenshot for Premium ---
 
     async def handle_screenshot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
