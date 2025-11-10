@@ -3373,11 +3373,6 @@ class MyanmarFinanceBot:
                 logger.error(
                     f"Error processing recurring transaction for user {user_id}: {e}")
     # ... ( _check_and_run_recurring_tx function ရဲ့ အောက်မှာ ထည့်ပါ) ...
-    async def _check_and_run_recurring_tx(self):
-        # ... (ဒီ function ထဲက code တွေ) ...
-            except Exception as e:
-                logger.error(
-                    f"Error processing recurring transaction for user {user_id}: {e}")
 
     # (!!!) NEW: Scheduler Job for Premium Expiration (!!!)
     async def _check_and_send_premium_reminders(self):
